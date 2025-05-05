@@ -1,0 +1,162 @@
+{
+  "dashboardName": "SlackMCPClient-Dashboard",
+  "dashboardBody": {
+    "widgets": [
+      {
+        "type": "metric",
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 6,
+        "properties": {
+          "metrics": [
+            [
+              "AWS/ECS",
+              "CPUUtilization",
+              "ClusterName",
+              "slack-mcp-client-cluster",
+              "ServiceName",
+              "slack-mcp-client-service"
+            ],
+            [".", "MemoryUtilization", ".", ".", ".", "."]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "ap-northeast-1",
+          "title": "ECS Service CPU and Memory Utilization",
+          "period": 60,
+          "stat": "Average"
+        }
+      },
+      {
+        "type": "metric",
+        "x": 12,
+        "y": 0,
+        "width": 12,
+        "height": 6,
+        "properties": {
+          "metrics": [
+            [
+              "AWS/ApplicationELB",
+              "RequestCount",
+              "LoadBalancer",
+              "app/slack-mcp-client-alb/abcdef1234567890"
+            ],
+            [".", "HTTPCode_Target_2XX_Count", ".", "."],
+            [".", "HTTPCode_Target_4XX_Count", ".", "."],
+            [".", "HTTPCode_Target_5XX_Count", ".", "."]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "ap-northeast-1",
+          "title": "ALB Request Count and Status Codes",
+          "period": 60,
+          "stat": "Sum"
+        }
+      },
+      {
+        "type": "metric",
+        "x": 0,
+        "y": 6,
+        "width": 12,
+        "height": 6,
+        "properties": {
+          "metrics": [
+            [
+              "AWS/ApplicationELB",
+              "TargetResponseTime",
+              "LoadBalancer",
+              "app/slack-mcp-client-alb/abcdef1234567890"
+            ]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "ap-northeast-1",
+          "title": "ALB Target Response Time",
+          "period": 60,
+          "stat": "Average",
+          "annotations": {
+            "horizontal": [
+              {
+                "label": "Warning Threshold",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "metric",
+        "x": 12,
+        "y": 6,
+        "width": 12,
+        "height": 6,
+        "properties": {
+          "metrics": [
+            ["SlackMCPClient", "ErrorCount"],
+            [".", "WarningCount"],
+            [".", "SlackEventCount"],
+            [".", "MCPOperationCount"]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "ap-northeast-1",
+          "title": "Application Metrics",
+          "period": 60,
+          "stat": "Sum"
+        }
+      },
+      {
+        "type": "metric",
+        "x": 0,
+        "y": 12,
+        "width": 12,
+        "height": 6,
+        "properties": {
+          "metrics": [
+            ["SlackMCPClient/Audit", "AuthFailureCount"],
+            [".", "SystemErrorCount"]
+          ],
+          "view": "timeSeries",
+          "stacked": false,
+          "region": "ap-northeast-1",
+          "title": "Audit Metrics",
+          "period": 300,
+          "stat": "Sum"
+        }
+      },
+      {
+        "type": "log",
+        "x": 12,
+        "y": 12,
+        "width": 12,
+        "height": 6,
+        "properties": {
+          "query": "SOURCE '/ecs/slack-mcp-client' | fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20",
+          "region": "ap-northeast-1",
+          "title": "Recent Error Logs",
+          "view": "table"
+        }
+      },
+      {
+        "type": "alarm",
+        "x": 0,
+        "y": 18,
+        "width": 24,
+        "height": 6,
+        "properties": {
+          "alarms": [
+            "arn:aws:cloudwatch:ap-northeast-1:123456789012:alarm:slack-mcp-client-cpu-utilization",
+            "arn:aws:cloudwatch:ap-northeast-1:123456789012:alarm:slack-mcp-client-memory-utilization",
+            "arn:aws:cloudwatch:ap-northeast-1:123456789012:alarm:slack-mcp-client-error-count",
+            "arn:aws:cloudwatch:ap-northeast-1:123456789012:alarm:slack-mcp-client-auth-failure",
+            "arn:aws:cloudwatch:ap-northeast-1:123456789012:alarm:slack-mcp-client-target-5xx-count",
+            "arn:aws:cloudwatch:ap-northeast-1:123456789012:alarm:slack-mcp-client-target-response-time"
+          ],
+          "title": "Alarms Status",
+          "region": "ap-northeast-1"
+        }
+      }
+    ]
+  }
+}

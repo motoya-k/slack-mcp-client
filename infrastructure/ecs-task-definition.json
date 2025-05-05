@@ -1,0 +1,98 @@
+{
+  "family": "slack-mcp-client",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "slack-mcp-client",
+      "image": "123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/slack-mcp-client:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "hostPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/slack-mcp-client",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "environment": [
+        {
+          "name": "DEBUG",
+          "value": "false"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "INFO"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "ap-northeast-1"
+        },
+        {
+          "name": "AWS_SECRET_MANAGER_ENABLED",
+          "value": "true"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "SLACK_BOT_TOKEN",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-mcp-client/slack-bot-token"
+        },
+        {
+          "name": "SLACK_SIGNING_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-mcp-client/slack-signing-secret"
+        },
+        {
+          "name": "PG_HOST",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-mcp-client/postgres:host"
+        },
+        {
+          "name": "PG_PORT",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-mcp-client/postgres:port"
+        },
+        {
+          "name": "PG_DATABASE",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-mcp-client/postgres:database"
+        },
+        {
+          "name": "PG_USER",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-mcp-client/postgres:user"
+        },
+        {
+          "name": "PG_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:123456789012:secret:slack-mcp-client/postgres:password"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8000/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "tags": [
+    {
+      "key": "Environment",
+      "value": "Production"
+    },
+    {
+      "key": "Application",
+      "value": "slack-mcp-client"
+    }
+  ]
+}

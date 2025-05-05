@@ -1,0 +1,64 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mcp_client_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Create .env file
+        run: |
+          cp .env.example .env
+          echo "DEBUG=True" >> .env
+          echo "PG_HOST=localhost" >> .env
+          echo "PG_PORT=5432" >> .env
+          echo "PG_DATABASE=mcp_client_test" >> .env
+          echo "PG_USER=postgres" >> .env
+          echo "PG_PASSWORD=postgres" >> .env
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ --cov=src --cov-report=xml
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false

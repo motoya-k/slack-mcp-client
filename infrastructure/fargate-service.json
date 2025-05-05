@@ -1,0 +1,45 @@
+{
+  "cluster": "slack-mcp-client-cluster",
+  "serviceName": "slack-mcp-client-service",
+  "taskDefinition": "slack-mcp-client",
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/slack-mcp-client/abcdef1234567890",
+      "containerName": "slack-mcp-client",
+      "containerPort": 8000
+    }
+  ],
+  "desiredCount": 2,
+  "launchType": "FARGATE",
+  "platformVersion": "LATEST",
+  "deploymentConfiguration": {
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 100,
+    "deploymentCircuitBreaker": {
+      "enable": true,
+      "rollback": true
+    }
+  },
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": ["subnet-12345678", "subnet-87654321"],
+      "securityGroups": ["sg-12345678"],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "healthCheckGracePeriodSeconds": 60,
+  "schedulingStrategy": "REPLICA",
+  "enableECSManagedTags": true,
+  "propagateTags": "SERVICE",
+  "tags": [
+    {
+      "key": "Environment",
+      "value": "Production"
+    },
+    {
+      "key": "Application",
+      "value": "slack-mcp-client"
+    }
+  ],
+  "enableExecuteCommand": true
+}

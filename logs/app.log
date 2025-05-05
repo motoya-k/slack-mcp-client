@@ -1,0 +1,235 @@
+2025-05-05 05:58:54,623 - root - INFO - Logging initialized with level: DEBUG
+2025-05-05 05:58:54,623 - src.security.authorization.role - DEBUG - Added permission ADMIN to role admin
+2025-05-05 05:58:54,623 - src.security.authorization.role - INFO - Added role: admin
+2025-05-05 05:58:54,623 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role user
+2025-05-05 05:58:54,623 - src.security.authorization.role - DEBUG - Added permission SEND_MESSAGE to role user
+2025-05-05 05:58:54,623 - src.security.authorization.role - INFO - Added role: user
+2025-05-05 05:58:54,624 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role readonly
+2025-05-05 05:58:54,624 - src.security.authorization.role - INFO - Added role: readonly
+2025-05-05 05:58:54,624 - src.security.authorization.role - DEBUG - Added permission QUERY_DATABASE to role db_admin
+2025-05-05 05:58:54,624 - src.security.authorization.role - DEBUG - Added permission MODIFY_DATABASE to role db_admin
+2025-05-05 05:58:54,624 - src.security.authorization.role - INFO - Added role: db_admin
+2025-05-05 05:58:54,624 - src.security.authorization.role - DEBUG - Added permission SEND_EMAIL to role mail_admin
+2025-05-05 05:58:54,625 - src.security.authorization.role - DEBUG - Added permission READ_EMAIL to role mail_admin
+2025-05-05 05:58:54,625 - src.security.authorization.role - INFO - Added role: mail_admin
+2025-05-05 05:58:54,625 - src.security.authorization.role - DEBUG - Added permission READ_NOTION to role notion_admin
+2025-05-05 05:58:54,625 - src.security.authorization.role - DEBUG - Added permission WRITE_NOTION to role notion_admin
+2025-05-05 05:58:54,625 - src.security.authorization.role - INFO - Added role: notion_admin
+2025-05-05 05:58:54,625 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 05:58:54,625 - src.security.encryption.key_manager - INFO - New master key created
+2025-05-05 05:58:54,626 - src.security.encryption.key_manager - INFO - New master key created and saved to file
+2025-05-05 05:58:54,626 - src.security.audit.audit_logger - INFO - Audit logger initialized with log file: /app/logs/audit.log
+2025-05-05 05:58:54,626 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 05:58:54,626 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 05:58:54,627 - root - INFO - Starting slack-mcp-client
+2025-05-05 05:58:54,627 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 05:58:54,628 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 05:58:54,628 - root - INFO - FastAgent initialized successfully
+2025-05-05 05:58:54,628 - src.security.authentication.service_auth - INFO - Credentials for postgresql loaded from config
+2025-05-05 05:58:54,628 - root - INFO - Credentials for postgresql loaded successfully
+2025-05-05 05:58:54,628 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 05:58:54,628 - src.security.authentication.service_auth - INFO - Credentials for postgresql updated in memory
+2025-05-05 05:58:54,628 - src.security.authentication.service_auth - ERROR - Gmail credentials file not found: None
+2025-05-05 05:58:54,628 - root - WARNING - Failed to load credentials for gmail
+2025-05-05 05:58:54,628 - src.security.authentication.service_auth - INFO - Credentials for notion loaded from config
+2025-05-05 05:58:54,628 - root - INFO - Credentials for notion loaded successfully
+2025-05-05 05:58:54,628 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 05:58:54,629 - src.security.authentication.service_auth - INFO - Credentials for notion updated in memory
+2025-05-05 05:58:54,629 - root - INFO - Setting up default access control
+2025-05-05 05:58:54,629 - src.security.authorization.access_control - INFO - Assigned role admin to user U12345678
+2025-05-05 05:58:54,629 - root - INFO - Assigned admin role to user U12345678
+2025-05-05 06:00:01,020 - root - INFO - Shutting down slack-mcp-client
+2025-05-05 06:00:01,431 - root - INFO - Logging initialized with level: DEBUG
+2025-05-05 06:00:01,431 - src.security.authorization.role - DEBUG - Added permission ADMIN to role admin
+2025-05-05 06:00:01,431 - src.security.authorization.role - INFO - Added role: admin
+2025-05-05 06:00:01,431 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role user
+2025-05-05 06:00:01,431 - src.security.authorization.role - DEBUG - Added permission SEND_MESSAGE to role user
+2025-05-05 06:00:01,431 - src.security.authorization.role - INFO - Added role: user
+2025-05-05 06:00:01,431 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role readonly
+2025-05-05 06:00:01,432 - src.security.authorization.role - INFO - Added role: readonly
+2025-05-05 06:00:01,432 - src.security.authorization.role - DEBUG - Added permission QUERY_DATABASE to role db_admin
+2025-05-05 06:00:01,432 - src.security.authorization.role - DEBUG - Added permission MODIFY_DATABASE to role db_admin
+2025-05-05 06:00:01,432 - src.security.authorization.role - INFO - Added role: db_admin
+2025-05-05 06:00:01,432 - src.security.authorization.role - DEBUG - Added permission SEND_EMAIL to role mail_admin
+2025-05-05 06:00:01,432 - src.security.authorization.role - DEBUG - Added permission READ_EMAIL to role mail_admin
+2025-05-05 06:00:01,432 - src.security.authorization.role - INFO - Added role: mail_admin
+2025-05-05 06:00:01,432 - src.security.authorization.role - DEBUG - Added permission READ_NOTION to role notion_admin
+2025-05-05 06:00:01,432 - src.security.authorization.role - DEBUG - Added permission WRITE_NOTION to role notion_admin
+2025-05-05 06:00:01,433 - src.security.authorization.role - INFO - Added role: notion_admin
+2025-05-05 06:00:01,433 - src.security.encryption.key_manager - INFO - Master key loaded from file
+2025-05-05 06:00:01,433 - src.security.audit.audit_logger - INFO - Audit logger initialized with log file: /app/logs/audit.log
+2025-05-05 06:00:01,433 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:01,434 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:01,435 - root - INFO - Starting slack-mcp-client
+2025-05-05 06:00:01,435 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:01,435 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:01,435 - root - INFO - FastAgent initialized successfully
+2025-05-05 06:00:01,436 - src.security.authentication.service_auth - INFO - Credentials for postgresql loaded from config
+2025-05-05 06:00:01,436 - root - INFO - Credentials for postgresql loaded successfully
+2025-05-05 06:00:01,436 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:01,436 - src.security.authentication.service_auth - INFO - Credentials for postgresql updated in memory
+2025-05-05 06:00:01,436 - src.security.authentication.service_auth - ERROR - Gmail credentials file not found: None
+2025-05-05 06:00:01,436 - root - WARNING - Failed to load credentials for gmail
+2025-05-05 06:00:01,436 - src.security.authentication.service_auth - INFO - Credentials for notion loaded from config
+2025-05-05 06:00:01,436 - root - INFO - Credentials for notion loaded successfully
+2025-05-05 06:00:01,436 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:01,437 - src.security.authentication.service_auth - INFO - Credentials for notion updated in memory
+2025-05-05 06:00:01,437 - root - INFO - Setting up default access control
+2025-05-05 06:00:01,437 - src.security.authorization.access_control - INFO - Assigned role admin to user U12345678
+2025-05-05 06:00:01,437 - root - INFO - Assigned admin role to user U12345678
+2025-05-05 06:00:04,840 - root - INFO - Shutting down slack-mcp-client
+2025-05-05 06:00:05,198 - root - INFO - Logging initialized with level: DEBUG
+2025-05-05 06:00:05,199 - src.security.authorization.role - DEBUG - Added permission ADMIN to role admin
+2025-05-05 06:00:05,199 - src.security.authorization.role - INFO - Added role: admin
+2025-05-05 06:00:05,199 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role user
+2025-05-05 06:00:05,199 - src.security.authorization.role - DEBUG - Added permission SEND_MESSAGE to role user
+2025-05-05 06:00:05,199 - src.security.authorization.role - INFO - Added role: user
+2025-05-05 06:00:05,199 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role readonly
+2025-05-05 06:00:05,199 - src.security.authorization.role - INFO - Added role: readonly
+2025-05-05 06:00:05,200 - src.security.authorization.role - DEBUG - Added permission QUERY_DATABASE to role db_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - DEBUG - Added permission MODIFY_DATABASE to role db_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - INFO - Added role: db_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - DEBUG - Added permission SEND_EMAIL to role mail_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - DEBUG - Added permission READ_EMAIL to role mail_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - INFO - Added role: mail_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - DEBUG - Added permission READ_NOTION to role notion_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - DEBUG - Added permission WRITE_NOTION to role notion_admin
+2025-05-05 06:00:05,200 - src.security.authorization.role - INFO - Added role: notion_admin
+2025-05-05 06:00:05,201 - src.security.encryption.key_manager - INFO - Master key loaded from file
+2025-05-05 06:00:05,201 - src.security.audit.audit_logger - INFO - Audit logger initialized with log file: /app/logs/audit.log
+2025-05-05 06:00:05,201 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:05,201 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:05,202 - root - INFO - Starting slack-mcp-client
+2025-05-05 06:00:05,202 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:05,202 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:05,203 - root - INFO - FastAgent initialized successfully
+2025-05-05 06:00:05,203 - src.security.authentication.service_auth - INFO - Credentials for postgresql loaded from config
+2025-05-05 06:00:05,203 - root - INFO - Credentials for postgresql loaded successfully
+2025-05-05 06:00:05,203 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:05,203 - src.security.authentication.service_auth - INFO - Credentials for postgresql updated in memory
+2025-05-05 06:00:05,203 - src.security.authentication.service_auth - ERROR - Gmail credentials file not found: None
+2025-05-05 06:00:05,203 - root - WARNING - Failed to load credentials for gmail
+2025-05-05 06:00:05,203 - src.security.authentication.service_auth - INFO - Credentials for notion loaded from config
+2025-05-05 06:00:05,204 - root - INFO - Credentials for notion loaded successfully
+2025-05-05 06:00:05,204 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:05,204 - src.security.authentication.service_auth - INFO - Credentials for notion updated in memory
+2025-05-05 06:00:05,204 - root - INFO - Setting up default access control
+2025-05-05 06:00:05,204 - src.security.authorization.access_control - INFO - Assigned role admin to user U12345678
+2025-05-05 06:00:05,204 - root - INFO - Assigned admin role to user U12345678
+2025-05-05 06:00:13,225 - root - INFO - Shutting down slack-mcp-client
+2025-05-05 06:00:13,612 - root - INFO - Logging initialized with level: DEBUG
+2025-05-05 06:00:13,612 - src.security.authorization.role - DEBUG - Added permission ADMIN to role admin
+2025-05-05 06:00:13,612 - src.security.authorization.role - INFO - Added role: admin
+2025-05-05 06:00:13,612 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role user
+2025-05-05 06:00:13,612 - src.security.authorization.role - DEBUG - Added permission SEND_MESSAGE to role user
+2025-05-05 06:00:13,612 - src.security.authorization.role - INFO - Added role: user
+2025-05-05 06:00:13,612 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role readonly
+2025-05-05 06:00:13,613 - src.security.authorization.role - INFO - Added role: readonly
+2025-05-05 06:00:13,613 - src.security.authorization.role - DEBUG - Added permission QUERY_DATABASE to role db_admin
+2025-05-05 06:00:13,613 - src.security.authorization.role - DEBUG - Added permission MODIFY_DATABASE to role db_admin
+2025-05-05 06:00:13,613 - src.security.authorization.role - INFO - Added role: db_admin
+2025-05-05 06:00:13,613 - src.security.authorization.role - DEBUG - Added permission SEND_EMAIL to role mail_admin
+2025-05-05 06:00:13,613 - src.security.authorization.role - DEBUG - Added permission READ_EMAIL to role mail_admin
+2025-05-05 06:00:13,613 - src.security.authorization.role - INFO - Added role: mail_admin
+2025-05-05 06:00:13,613 - src.security.authorization.role - DEBUG - Added permission READ_NOTION to role notion_admin
+2025-05-05 06:00:13,614 - src.security.authorization.role - DEBUG - Added permission WRITE_NOTION to role notion_admin
+2025-05-05 06:00:13,614 - src.security.authorization.role - INFO - Added role: notion_admin
+2025-05-05 06:00:13,614 - src.security.encryption.key_manager - INFO - Master key loaded from file
+2025-05-05 06:00:13,614 - src.security.audit.audit_logger - INFO - Audit logger initialized with log file: /app/logs/audit.log
+2025-05-05 06:00:13,614 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:13,615 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:13,616 - root - INFO - Starting slack-mcp-client
+2025-05-05 06:00:13,616 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:13,616 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:13,616 - root - INFO - FastAgent initialized successfully
+2025-05-05 06:00:13,616 - src.security.authentication.service_auth - INFO - Credentials for postgresql loaded from config
+2025-05-05 06:00:13,617 - root - INFO - Credentials for postgresql loaded successfully
+2025-05-05 06:00:13,617 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:13,617 - src.security.authentication.service_auth - INFO - Credentials for postgresql updated in memory
+2025-05-05 06:00:13,617 - src.security.authentication.service_auth - ERROR - Gmail credentials file not found: None
+2025-05-05 06:00:13,617 - root - WARNING - Failed to load credentials for gmail
+2025-05-05 06:00:13,617 - src.security.authentication.service_auth - INFO - Credentials for notion loaded from config
+2025-05-05 06:00:13,617 - root - INFO - Credentials for notion loaded successfully
+2025-05-05 06:00:13,617 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:13,617 - src.security.authentication.service_auth - INFO - Credentials for notion updated in memory
+2025-05-05 06:00:13,618 - root - INFO - Setting up default access control
+2025-05-05 06:00:13,618 - src.security.authorization.access_control - INFO - Assigned role admin to user U12345678
+2025-05-05 06:00:13,618 - root - INFO - Assigned admin role to user U12345678
+2025-05-05 06:00:17,399 - root - INFO - Shutting down slack-mcp-client
+2025-05-05 06:00:17,824 - root - INFO - Logging initialized with level: DEBUG
+2025-05-05 06:00:17,825 - src.security.authorization.role - DEBUG - Added permission ADMIN to role admin
+2025-05-05 06:00:17,825 - src.security.authorization.role - INFO - Added role: admin
+2025-05-05 06:00:17,825 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role user
+2025-05-05 06:00:17,825 - src.security.authorization.role - DEBUG - Added permission SEND_MESSAGE to role user
+2025-05-05 06:00:17,825 - src.security.authorization.role - INFO - Added role: user
+2025-05-05 06:00:17,825 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role readonly
+2025-05-05 06:00:17,826 - src.security.authorization.role - INFO - Added role: readonly
+2025-05-05 06:00:17,826 - src.security.authorization.role - DEBUG - Added permission QUERY_DATABASE to role db_admin
+2025-05-05 06:00:17,826 - src.security.authorization.role - DEBUG - Added permission MODIFY_DATABASE to role db_admin
+2025-05-05 06:00:17,826 - src.security.authorization.role - INFO - Added role: db_admin
+2025-05-05 06:00:17,826 - src.security.authorization.role - DEBUG - Added permission SEND_EMAIL to role mail_admin
+2025-05-05 06:00:17,826 - src.security.authorization.role - DEBUG - Added permission READ_EMAIL to role mail_admin
+2025-05-05 06:00:17,826 - src.security.authorization.role - INFO - Added role: mail_admin
+2025-05-05 06:00:17,826 - src.security.authorization.role - DEBUG - Added permission READ_NOTION to role notion_admin
+2025-05-05 06:00:17,827 - src.security.authorization.role - DEBUG - Added permission WRITE_NOTION to role notion_admin
+2025-05-05 06:00:17,827 - src.security.authorization.role - INFO - Added role: notion_admin
+2025-05-05 06:00:17,827 - src.security.encryption.key_manager - INFO - Master key loaded from file
+2025-05-05 06:00:17,827 - src.security.audit.audit_logger - INFO - Audit logger initialized with log file: /app/logs/audit.log
+2025-05-05 06:00:17,827 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:17,828 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:17,829 - root - INFO - Starting slack-mcp-client
+2025-05-05 06:00:17,829 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:00:17,829 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:00:17,829 - root - INFO - FastAgent initialized successfully
+2025-05-05 06:00:17,829 - src.security.authentication.service_auth - INFO - Credentials for postgresql loaded from config
+2025-05-05 06:00:17,830 - root - INFO - Credentials for postgresql loaded successfully
+2025-05-05 06:00:17,830 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:17,830 - src.security.authentication.service_auth - INFO - Credentials for postgresql updated in memory
+2025-05-05 06:00:17,830 - src.security.authentication.service_auth - ERROR - Gmail credentials file not found: None
+2025-05-05 06:00:17,830 - root - WARNING - Failed to load credentials for gmail
+2025-05-05 06:00:17,830 - src.security.authentication.service_auth - INFO - Credentials for notion loaded from config
+2025-05-05 06:00:17,830 - root - INFO - Credentials for notion loaded successfully
+2025-05-05 06:00:17,830 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:00:17,830 - src.security.authentication.service_auth - INFO - Credentials for notion updated in memory
+2025-05-05 06:00:17,831 - root - INFO - Setting up default access control
+2025-05-05 06:00:17,831 - src.security.authorization.access_control - INFO - Assigned role admin to user U12345678
+2025-05-05 06:00:17,831 - root - INFO - Assigned admin role to user U12345678
+2025-05-05 06:01:05,755 - root - INFO - Shutting down slack-mcp-client
+2025-05-05 06:01:06,171 - root - INFO - Logging initialized with level: DEBUG
+2025-05-05 06:01:06,171 - src.security.authorization.role - DEBUG - Added permission ADMIN to role admin
+2025-05-05 06:01:06,171 - src.security.authorization.role - INFO - Added role: admin
+2025-05-05 06:01:06,171 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role user
+2025-05-05 06:01:06,171 - src.security.authorization.role - DEBUG - Added permission SEND_MESSAGE to role user
+2025-05-05 06:01:06,171 - src.security.authorization.role - INFO - Added role: user
+2025-05-05 06:01:06,172 - src.security.authorization.role - DEBUG - Added permission VIEW_PUBLIC to role readonly
+2025-05-05 06:01:06,172 - src.security.authorization.role - INFO - Added role: readonly
+2025-05-05 06:01:06,172 - src.security.authorization.role - DEBUG - Added permission QUERY_DATABASE to role db_admin
+2025-05-05 06:01:06,172 - src.security.authorization.role - DEBUG - Added permission MODIFY_DATABASE to role db_admin
+2025-05-05 06:01:06,172 - src.security.authorization.role - INFO - Added role: db_admin
+2025-05-05 06:01:06,172 - src.security.authorization.role - DEBUG - Added permission SEND_EMAIL to role mail_admin
+2025-05-05 06:01:06,172 - src.security.authorization.role - DEBUG - Added permission READ_EMAIL to role mail_admin
+2025-05-05 06:01:06,172 - src.security.authorization.role - INFO - Added role: mail_admin
+2025-05-05 06:01:06,173 - src.security.authorization.role - DEBUG - Added permission READ_NOTION to role notion_admin
+2025-05-05 06:01:06,173 - src.security.authorization.role - DEBUG - Added permission WRITE_NOTION to role notion_admin
+2025-05-05 06:01:06,173 - src.security.authorization.role - INFO - Added role: notion_admin
+2025-05-05 06:01:06,173 - src.security.encryption.key_manager - INFO - Master key loaded from file
+2025-05-05 06:01:06,174 - src.security.audit.audit_logger - INFO - Audit logger initialized with log file: /app/logs/audit.log
+2025-05-05 06:01:06,174 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:01:06,174 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:01:06,175 - root - INFO - Starting slack-mcp-client
+2025-05-05 06:01:06,175 - src.agent.integration - INFO - Initializing fast-agent
+2025-05-05 06:01:06,175 - src.agent.integration - INFO - fast-agent initialized successfully
+2025-05-05 06:01:06,175 - root - INFO - FastAgent initialized successfully
+2025-05-05 06:01:06,175 - src.security.authentication.service_auth - INFO - Credentials for postgresql loaded from config
+2025-05-05 06:01:06,176 - root - INFO - Credentials for postgresql loaded successfully
+2025-05-05 06:01:06,176 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:01:06,176 - src.security.authentication.service_auth - INFO - Credentials for postgresql updated in memory
+2025-05-05 06:01:06,176 - src.security.authentication.service_auth - ERROR - Gmail credentials file not found: None
+2025-05-05 06:01:06,176 - root - WARNING - Failed to load credentials for gmail
+2025-05-05 06:01:06,176 - src.security.authentication.service_auth - INFO - Credentials for notion loaded from config
+2025-05-05 06:01:06,176 - root - INFO - Credentials for notion loaded successfully
+2025-05-05 06:01:06,176 - src.security.encryption.data_encryption - DEBUG - DataEncryption initialized
+2025-05-05 06:01:06,176 - src.security.authentication.service_auth - INFO - Credentials for notion updated in memory
+2025-05-05 06:01:06,177 - root - INFO - Setting up default access control
+2025-05-05 06:01:06,177 - src.security.authorization.access_control - INFO - Assigned role admin to user U12345678
+2025-05-05 06:01:06,177 - root - INFO - Assigned admin role to user U12345678

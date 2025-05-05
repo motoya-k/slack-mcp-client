@@ -1,0 +1,122 @@
+{
+  "alarms": [
+    {
+      "name": "slack-mcp-client-cpu-utilization",
+      "namespace": "AWS/ECS",
+      "metricName": "CPUUtilization",
+      "dimensions": [
+        {
+          "name": "ClusterName",
+          "value": "slack-mcp-client-cluster"
+        },
+        {
+          "name": "ServiceName",
+          "value": "slack-mcp-client-service"
+        }
+      ],
+      "statistic": "Average",
+      "period": 60,
+      "evaluationPeriods": 5,
+      "threshold": 80,
+      "comparisonOperator": "GreaterThanThreshold",
+      "alarmActions": [
+        "arn:aws:sns:ap-northeast-1:123456789012:slack-mcp-client-alerts"
+      ]
+    },
+    {
+      "name": "slack-mcp-client-memory-utilization",
+      "namespace": "AWS/ECS",
+      "metricName": "MemoryUtilization",
+      "dimensions": [
+        {
+          "name": "ClusterName",
+          "value": "slack-mcp-client-cluster"
+        },
+        {
+          "name": "ServiceName",
+          "value": "slack-mcp-client-service"
+        }
+      ],
+      "statistic": "Average",
+      "period": 60,
+      "evaluationPeriods": 5,
+      "threshold": 80,
+      "comparisonOperator": "GreaterThanThreshold",
+      "alarmActions": [
+        "arn:aws:sns:ap-northeast-1:123456789012:slack-mcp-client-alerts"
+      ]
+    },
+    {
+      "name": "slack-mcp-client-error-count",
+      "namespace": "SlackMCPClient",
+      "metricName": "ErrorCount",
+      "statistic": "Sum",
+      "period": 60,
+      "evaluationPeriods": 1,
+      "threshold": 5,
+      "comparisonOperator": "GreaterThanThreshold",
+      "alarmActions": [
+        "arn:aws:sns:ap-northeast-1:123456789012:slack-mcp-client-alerts"
+      ]
+    },
+    {
+      "name": "slack-mcp-client-auth-failure",
+      "namespace": "SlackMCPClient/Audit",
+      "metricName": "AuthFailureCount",
+      "statistic": "Sum",
+      "period": 300,
+      "evaluationPeriods": 1,
+      "threshold": 10,
+      "comparisonOperator": "GreaterThanThreshold",
+      "alarmActions": [
+        "arn:aws:sns:ap-northeast-1:123456789012:slack-mcp-client-alerts"
+      ]
+    },
+    {
+      "name": "slack-mcp-client-target-5xx-count",
+      "namespace": "AWS/ApplicationELB",
+      "metricName": "HTTPCode_Target_5XX_Count",
+      "dimensions": [
+        {
+          "name": "LoadBalancer",
+          "value": "app/slack-mcp-client-alb/abcdef1234567890"
+        },
+        {
+          "name": "TargetGroup",
+          "value": "targetgroup/slack-mcp-client/abcdef1234567890"
+        }
+      ],
+      "statistic": "Sum",
+      "period": 60,
+      "evaluationPeriods": 1,
+      "threshold": 5,
+      "comparisonOperator": "GreaterThanThreshold",
+      "alarmActions": [
+        "arn:aws:sns:ap-northeast-1:123456789012:slack-mcp-client-alerts"
+      ]
+    },
+    {
+      "name": "slack-mcp-client-target-response-time",
+      "namespace": "AWS/ApplicationELB",
+      "metricName": "TargetResponseTime",
+      "dimensions": [
+        {
+          "name": "LoadBalancer",
+          "value": "app/slack-mcp-client-alb/abcdef1234567890"
+        },
+        {
+          "name": "TargetGroup",
+          "value": "targetgroup/slack-mcp-client/abcdef1234567890"
+        }
+      ],
+      "statistic": "Average",
+      "period": 60,
+      "evaluationPeriods": 3,
+      "threshold": 1,
+      "comparisonOperator": "GreaterThanThreshold",
+      "alarmActions": [
+        "arn:aws:sns:ap-northeast-1:123456789012:slack-mcp-client-alerts"
+      ]
+    }
+  ]
+}

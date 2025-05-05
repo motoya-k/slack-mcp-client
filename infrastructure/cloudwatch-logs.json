@@ -1,0 +1,99 @@
+{
+  "logGroups": [
+    {
+      "logGroupName": "/ecs/slack-mcp-client",
+      "retentionInDays": 30,
+      "tags": {
+        "Application": "slack-mcp-client",
+        "Environment": "Production"
+      },
+      "metricFilters": [
+        {
+          "filterName": "ErrorCount",
+          "filterPattern": "ERROR",
+          "metricTransformations": [
+            {
+              "metricName": "ErrorCount",
+              "metricNamespace": "SlackMCPClient",
+              "metricValue": "1"
+            }
+          ]
+        },
+        {
+          "filterName": "WarningCount",
+          "filterPattern": "WARN",
+          "metricTransformations": [
+            {
+              "metricName": "WarningCount",
+              "metricNamespace": "SlackMCPClient",
+              "metricValue": "1"
+            }
+          ]
+        },
+        {
+          "filterName": "SlackEventCount",
+          "filterPattern": "Received Slack event",
+          "metricTransformations": [
+            {
+              "metricName": "SlackEventCount",
+              "metricNamespace": "SlackMCPClient",
+              "metricValue": "1"
+            }
+          ]
+        },
+        {
+          "filterName": "MCPOperationCount",
+          "filterPattern": "Executing operation",
+          "metricTransformations": [
+            {
+              "metricName": "MCPOperationCount",
+              "metricNamespace": "SlackMCPClient",
+              "metricValue": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "logGroupName": "/slack-mcp-client/audit",
+      "retentionInDays": 90,
+      "tags": {
+        "Application": "slack-mcp-client",
+        "Environment": "Production",
+        "Type": "Audit"
+      },
+      "metricFilters": [
+        {
+          "filterName": "AuthFailureCount",
+          "filterPattern": "{ $.status = \"failure\" && $.event_type = \"auth.*\" }",
+          "metricTransformations": [
+            {
+              "metricName": "AuthFailureCount",
+              "metricNamespace": "SlackMCPClient/Audit",
+              "metricValue": "1"
+            }
+          ]
+        },
+        {
+          "filterName": "SystemErrorCount",
+          "filterPattern": "{ $.status = \"error\" && $.event_type = \"system.*\" }",
+          "metricTransformations": [
+            {
+              "metricName": "SystemErrorCount",
+              "metricNamespace": "SlackMCPClient/Audit",
+              "metricValue": "1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "subscriptionFilters": [
+    {
+      "logGroupName": "/ecs/slack-mcp-client",
+      "filterName": "AuditLogFilter",
+      "filterPattern": "{ $.level = \"ERROR\" || $.level = \"WARN\" }",
+      "destinationArn": "arn:aws:logs:ap-northeast-1:123456789012:destination:ErrorLogDestination"
+    }
+  ]
+}
