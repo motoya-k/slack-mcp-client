@@ -1,106 +1,174 @@
-# Slack MCPクライアント
+# Slack MCP Client
 
-Slackからのイベントを受け取り、fast-agentを利用して処理し、MCPプロトコルを通じて外部サービス（PostgreSQL、Gmail、Notion）と連携するクライアントです。AWS Fargate上でコンテナとして実行され、スケーラビリティと管理の容易さを実現します。
+A Python client for connecting to and interacting with Model Context Protocol (MCP) servers.
 
-## システム概要
+## Features
 
-このシステムは以下のコンポーネントで構成されています：
+- Connect to multiple MCP servers simultaneously
+- Support for different transport methods (stdio, HTTP)
+- Manage server connections with JSON configuration
+- Support for multiple AI providers (Anthropic, OpenAI, Gemini)
+- Interactive chat interface with AI
+- Support for both Python and JavaScript MCP servers
+- Clean architecture with dependency injection
 
-1. **Slack Event Handler**: Slackからのイベントを受信し、処理します
-2. **fast-agent統合**: イベント処理とタスク実行を管理します
-3. **MCPクライアント**: 外部サービスとMCPプロトコルで連携します
-4. **セキュリティ機能**: 認証、認可、暗号化、監査を提供します
+## Installation
 
-## 前提条件
-
-- Python 3.9以上
-- Docker（開発・デプロイ用）
-- AWS CLI（AWSリソース操作用）
-- Slack APIアクセス用のトークンとシークレット
-- 各外部サービス（PostgreSQL、Gmail、Notion）のAPIキーまたは認証情報
-
-## セットアップ
-
-### 開発環境のセットアップ
-
-1. リポジトリをクローン
-   ```
-   git clone https://github.com/yourusername/slack-mcp-client.git
-   cd slack-mcp-client
-   ```
-
-2. 仮想環境の作成と有効化
-   ```
-   python -m venv venv
-   source venv/bin/activate  # Windowsの場合: venv\Scripts\activate
-   ```
-
-3. 依存関係のインストール
-   ```
-   pip install -r requirements.txt
-   ```
-
-4. 環境変数の設定
-   ```
-   cp .env.example .env
-   # .envファイルを編集して必要な設定を行う
-   ```
-
-5. アプリケーションの実行
-   ```
-   python -m src.main
-   ```
-
-### Dockerを使用したセットアップ
-
-1. Dockerイメージのビルド
-   ```
-   docker build -t slack-mcp-client .
-   ```
-
-2. Dockerコンテナの実行
-   ```
-   docker run -p 8000:8000 --env-file .env slack-mcp-client
-   ```
-
-## 使用方法
-
-1. Slackアプリを設定し、イベントサブスクリプションURLを設定します
-   - イベントURL: `https://your-domain.com/slack/events`
-
-2. 必要なSlackの権限スコープを設定します
-   - `chat:write`
-   - `commands`
-   - その他必要なスコープ
-
-3. Slackでコマンドを使用して、外部サービスと連携します
-   - 例: `/mcp-query "SELECT * FROM users LIMIT 10"`
-
-## 開発
-
-### テストの実行
-
-```
-pytest
+```bash
+uv sync
 ```
 
-### コードスタイルチェック
+## Usage
+
+### Using JSON Configuration (Recommended)
+
+Create a `config.json` file with transport-specific configurations:
+
+```json
+{
+  "weather": {
+    "transport": "stdio",
+    "command": "python",
+    "args": ["src/weather.py"],
+    "env": null
+  },
+  "calculator": {
+    "transport": "stdio",
+    "command": "node",
+    "args": ["src/calculator.js"],
+    "env": null
+  },
+  "example_http": {
+    "transport": "http",
+    "url": "http://localhost:8000"
+  }
+}
+```
+
+Then simply run the client:
+
+```bash
+# Using the installed command
+slack-mcp-client
+
+# Or using the main.py script with different AI providers
+uv run main.py
+```
+
+The client will automatically load the `config.json` file and connect to all configured servers.
+
+### Interactive Chat Commands
+
+- Type `servers` to list all connected servers and their tools
+- To use a specific server, prefix your query with the server name: `weather: What's the forecast for New York?`
+- Type `quit` to exit the client
+
+## Transport Methods
+
+### stdio Transport
+
+The stdio transport method runs a local command (like `python script.py` or `node script.js`) and communicates with the MCP server through standard input/output.
+
+Configuration parameters:
+- `transport`: Set to "stdio"
+- `command`: The command to run (e.g., "python", "node")
+- `args`: List of command arguments (e.g., ["script.py"])
+- `env`: Optional environment variables
+
+### HTTP Transport
+
+The HTTP transport method connects to an MCP server running as an HTTP service.
+
+Configuration parameters:
+- `transport`: Set to "http"
+- `url`: The URL of the HTTP MCP server
+
+## Development
+
+### Architecture
+
+The client uses a dependency injection pattern to separate concerns:
+
+- `ServerConnectionManager`: Handles all server connections and transport methods
+- `AgentManager`: Abstracts different AI providers (Anthropic, OpenAI, Gemini)
+- `MCPClient`: Manages the chat interface and query processing
+
+This separation makes the code more maintainable, testable, and flexible.
+
+### Project Structure
 
 ```
-flake8 src tests
+slack-mcp-client/
+├── config.json           # Server configuration
+├── main.py               # Entry point script
+├── setup.py              # Setup script
+├── pyproject.toml        # Project metadata
+├── README.md             # Project documentation
+├── src/
+│   └── mcp_client/ # Main package
+│       ├── __init__.py   # Package initialization
+│       ├── client.py     # MCPClient implementation
+│       ├── server_manager.py # ServerConnectionManager implementation
+│       ├── agent_manager.py # AgentManager implementation
+│       └── cli.py        # Command-line interface
 ```
 
-### 型チェック
+### Using the API
 
+```python
+import asyncio
+from mcp_client import MCPClient, ServerConnectionManager
+
+async def main():
+    # Create server manager and client
+    server_manager = ServerConnectionManager()
+    
+    # Use Anthropic (default)
+    client = MCPClient(server_manager, "config.json")
+    
+    # Or use OpenAI
+    # client = MCPClient(server_manager, "config.json", provider="openai")
+    
+    # Or use Gemini with a specific model
+    # client = MCPClient(server_manager, "config.json", provider="gemini", model="gemini-1.5-pro")
+    
+    # Initialize and connect to servers
+    await client.initialize()
+    
+    # Process queries
+    response = await client.process_query("What's the weather like?", "weather")
+    print(response)
+    
+    # Clean up
+    await client.cleanup()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
-mypy src
+
+### Using Different AI Providers
+
+The client supports multiple AI providers through the `AgentManager` class:
+
+```python
+from mcp_client import AgentManager, AnthropicAgentManager, OpenAIAgentManager, GeminiAgentManager
+
+# Create an agent manager for a specific provider
+agent = AgentManager.create("anthropic")  # or "openai" or "gemini"
+
+# Or create provider-specific instances directly
+anthropic_agent = AnthropicAgentManager(model="claude-3-5-sonnet-20241022")
+openai_agent = OpenAIAgentManager(model="gpt-4o")
+gemini_agent = GeminiAgentManager(model="gemini-1.5-pro")
+
+# Then use it with MCPClient
+client = MCPClient(server_manager, agent_manager=agent)
 ```
 
-## デプロイ
+## License
 
-AWS Fargateへのデプロイは、GitHub Actionsを使用して自動化されています。
-詳細は`.github/workflows/deploy.yml`を参照してください。
+MIT
 
-## ライセンス
+## References
 
-[MIT License](LICENSE)
+- [Model Context Protocol (MCP) Python SDK](https://github.com/modelcontextprotocol/python-sdk)

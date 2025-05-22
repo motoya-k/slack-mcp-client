@@ -1,0 +1,28 @@
+{
+  "notion": {
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "@suekou/mcp-notion-server"],
+    "env": {
+      "NOTION_API_TOKEN": "${NOTION_API_TOKEN}"
+    }
+  },
+  "slack": {
+    "transport": "stdio",
+    "command": "docker",
+    "args": [
+      "run",
+      "-i",
+      "--rm",
+      "-e",
+      "SLACK_BOT_TOKEN",
+      "-e",
+      "SLACK_TEAM_ID",
+      "mcp/slack"
+    ],
+    "env": {
+      "SLACK_BOT_TOKEN": "$SLACK_BOT_TOKEN",
+      "SLACK_TEAM_ID": "$SLACK_TEAM_ID"
+    }
+  }
+}
