@@ -2,5 +2,8 @@
     "cSpell.words": [
         "dotenv",
         "venv"
+    ],
+    "python.analysis.extraPaths": [
+        "./src/slack_bot"
     ]
 }

@@ -9,6 +9,8 @@ import logging
 import asyncio
 from typing import Dict, Optional, List, Any, Literal
 
+from dotenv import load_dotenv
+
 from .server_manager import ServerConnectionManager
 from .agent_manager import create_agent
 
@@ -43,10 +45,28 @@ class MCPClient:
             provider, system_prompt_path=system_prompt_path, **agent_kwargs
         )
 
-    async def chat_loop(self):
+    async def chat_loop(self, query: str):
         """Run an interactive chat loop"""
-        query = input("")
         servers = self.server_manager.get_servers()
         response = await self.agent_manager.process_query(query, servers)
+        return response
 
-        print(f"😺 MCP Client response: {response}")
+
+async def create_client() -> MCPClient:
+    load_dotenv()
+    # Don't use async with here - we need the server_manager to stay active
+    server_manager = ServerConnectionManager(
+        logger=logging.getLogger("ServerConnectionManager"),
+        config_path="config.json",
+    )
+    # Initialize the server manager manually
+    await server_manager.__aenter__()
+
+    client = MCPClient(
+        server_manager=server_manager,
+        logger=logging.getLogger("MCPClient"),
+        provider="anthropic",
+        model="claude-3-7-sonnet-20250219",
+        system_prompt_path="system.md",
+    )
+    return client
