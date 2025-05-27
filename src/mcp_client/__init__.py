@@ -7,10 +7,9 @@ for connecting to various MCP servers and AI providers (Anthropic, OpenAI, Gemin
 from .client import MCPClient
 from .server_manager import ServerConnectionManager
 from .agent_manager import (
-    AgentManager,
-    AnthropicAgentManager,
-    OpenAIAgentManager,
-    GeminiAgentManager,
+    AgentManger,
+    ClaudeAgent,
+    GeminiAgent,
 )
 
 __all__ = [

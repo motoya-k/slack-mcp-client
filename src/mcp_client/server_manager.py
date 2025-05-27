@@ -1,65 +1,110 @@
-"""Server connection manager for MCP clients.
-
-This module provides the ServerConnectionManager class which handles connections
-to MCP servers with different transport methods.
-"""
-
+import asyncio
 import json
 import os
 import logging
-from typing import Dict, Optional, Tuple, Any, List, Union
+from typing import Dict, Optional, Any, List
 from contextlib import AsyncExitStack
-import re
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 
-class ServerConnectionManager:
-    """Manages connections to MCP servers with different transport methods"""
+class Tool:
+    """Represents a tool with its properties and formatting."""
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
-        self.servers: Dict[str, Dict[str, Any]] = {}
-        self.exit_stack = AsyncExitStack()
-        self.server_config: Dict[str, Dict[str, Any]] = {}
-        self.server_keywords: Dict[str, List[str]] = {}
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        input_schema: Dict[str, Any],
+        parameters: Dict[str, Any],
+    ) -> None:
+        self.name: str = name
+        self.description: str = description
+        self.input_schema: Dict[str, Any] = input_schema
+        self.parameters: Dict[str, Any] = parameters
+
+    def get_name(self) -> str:
+        """Get the name of the tool."""
+        return self.name
+
+    def get_description(self) -> str:
+        """Get the description of the tool."""
+        return self.description
+
+    def get_input_schema(self) -> Dict[str, Any]:
+        """Get the input schema of the tool."""
+        return self.input_schema
+
+    def get_parameters(self) -> Dict[str, Any]:
+        """Get the parameters of the tool."""
+        return self.parameters
+
+    def format_for_llm(self) -> str:
+        """Format tool information for LLM.
+
+        Returns:
+            A formatted string describing the tool.
+        """
+        args_desc = []
+        if "properties" in self.input_schema:
+            for param_name, param_info in self.input_schema["properties"].items():
+                arg_desc = (
+                    f"- {param_name}: {param_info.get('description', 'No description')}"
+                )
+                if param_name in self.input_schema.get("required", []):
+                    arg_desc += " (required)"
+                args_desc.append(arg_desc)
+
+        return f"""
+Tool: {self.name}
+Description: {self.description}
+Arguments:
+{chr(10).join(args_desc)}
+"""
+
+
+class Server:
+    """Manages MCP server connections and tool execution."""
+
+    def __init__(
+        self, name: str, config: Dict[str, Any], logger: Optional[logging.Logger] = None
+    ) -> None:
+        self.name: str = name
+        self.config: Dict[str, Any] = config
         self.logger = logger or logging.getLogger(__name__)
+        self.stdio_context: Any | None = None
+        self.session: ClientSession | None = None
+        self._cleanup_lock: asyncio.Lock = asyncio.Lock()
+        self.exit_stack: AsyncExitStack = AsyncExitStack()
 
-    async def initialize(self):
-        """Initialize by connecting to all servers in the config and command line args
+    async def __aenter__(self):
+        """Connect to the server."""
+        env_config = self._process_env_variables(self.config.get("env"))
 
-        Args:
-            connect_args: List of (name, script_path) tuples for stdio servers
-            connect_http_args: List of (name, url) tuples for HTTP servers
-        """
-        # Connect to servers from config file
-        if self.server_config:
-            for server_name, server_info in self.server_config.items():
-                try:
-                    await self.connect_to_server_from_config(server_name, server_info)
-                except Exception as e:
-                    self.logger.error(
-                        f"Error connecting to server '{server_name}': {str(e)}"
-                    )
+        transport = self.config.get("transport", "stdio")
+        if transport == "stdio":
+            await self._connect_to_stdio_server(
+                self.config.get("command"),
+                self.config.get("args", []),
+                env_config,
+            )
+        elif transport == "http":
+            await self._connect_to_http_server(self.config.get("url"))
+        else:
+            raise ValueError(f"Unsupported transport type: {transport}")
+        return self
 
-    def load_server_config(self, config_path: str) -> None:
-        """Load server configuration from a JSON file
-
-        Args:
-            config_path: Path to the JSON configuration file
-        """
-        try:
-            with open(config_path, "r") as f:
-                config = json.load(f)
-            # Store configuration but don't connect yet
-            self.server_config = config
-
-            # Extract keywords from config if available
-            for server_name, server_info in config.items():
-                if "keywords" in server_info:
-                    self.server_keywords[server_name] = server_info["keywords"]
-        except Exception as e:
-            self.logger.error(f"Error loading server configuration: {str(e)}")
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Clean up the server."""
+        async with self._cleanup_lock:
+            try:
+                await self.exit_stack.aclose()
+                self.session = None
+                self.stdio_context = None
+                self.logger.info(f"✨ Cleaned up server {self.name}")
+            except Exception as e:
+                self.logger.error(f"Error during cleanup of server {self.name}: {e}")
 
     def _process_env_variables(
         self, env_config: Optional[Dict[str, str]]
@@ -82,13 +127,10 @@ class ServerConnectionManager:
         processed_env = {}
         for key, value in env_config.items():
             if isinstance(value, str):
-                # Check if the value is an environment variable reference
                 if value.startswith("$"):
-                    # Handle both $VAR and ${VAR} formats
                     env_var_name = (
                         value[1:] if not value.startswith("${") else value[2:-1]
                     )
-                    # Get from system environment or use original as fallback
                     env_value = os.environ.get(env_var_name)
                     if env_value is not None:
                         processed_env[key] = env_value
@@ -104,35 +146,8 @@ class ServerConnectionManager:
 
         return processed_env
 
-    async def connect_to_server_from_config(
-        self, server_name: str, server_config: Dict[str, Any]
-    ):
-        """Connect to an MCP server using configuration data
-
-        Args:
-            server_name: Name to identify this server connection
-            server_config: Configuration dictionary for the server
-        """
-        transport = server_config.get("transport", "stdio")
-
-        # Process environment variables
-        env_config = self._process_env_variables(server_config.get("env"))
-
-        if transport == "stdio":
-            await self.connect_to_stdio_server(
-                server_name,
-                server_config.get("command"),
-                server_config.get("args", []),
-                env_config,
-            )
-        elif transport == "http":
-            await self.connect_to_http_server(server_name, server_config.get("url"))
-        else:
-            raise ValueError(f"Unsupported transport type: {transport}")
-
-    async def connect_to_stdio_server(
+    async def _connect_to_stdio_server(
         self,
-        server_name: str,
         command: str,
         args: List[str],
         env: Optional[Dict[str, str]] = None,
@@ -145,120 +160,112 @@ class ServerConnectionManager:
             args: Command arguments (e.g., ["script.py"])
             env: Environment variables
         """
-        # Check if server with this name already exists
-        if server_name in self.servers:
-            self.logger.info(f"Server '{server_name}' is already connected")
-            return
-
         server_params = StdioServerParameters(command=command, args=args, env=env)
 
-        stdio_transport = await self.exit_stack.enter_async_context(
-            stdio_client(server_params)
-        )
-        stdio, write = stdio_transport
-        session = await self.exit_stack.enter_async_context(ClientSession(stdio, write))
+        try:
+            stdio_transport = await self.exit_stack.enter_async_context(
+                stdio_client(server_params)
+            )
+            read, write = stdio_transport
+            session = await self.exit_stack.enter_async_context(
+                ClientSession(read, write)
+            )
+            await session.initialize()
+            self.session = session
+        except Exception as e:
+            self.logger.error(f"Error initializing server {self.name}: {e}")
+            # No need to call cleanup here, __aexit__ will handle it
+            raise
 
-        await session.initialize()
-
-        # List available tools
-        response = await session.list_tools()
-        tools = response.tools
-
-        # Generate keywords from server name and tools
-        keywords = self._generate_keywords_from_tools(server_name, tools)
-
-        # If there are keywords in the config, merge them with the generated ones
-        if server_name in self.server_keywords:
-            keywords.extend(self.server_keywords[server_name])
-            # Remove duplicates while preserving order
-            keywords = list(dict.fromkeys(keywords))
-
-        # Update server keywords
-        self.server_keywords[server_name] = keywords
-
-        # Store server information
-        self.servers[server_name] = {
-            "transport": "stdio",
-            "command": command,
-            "args": args,
-            "env": env,
-            "session": session,
-            "stdio": stdio,
-            "write": write,
-            "tools": tools,
-        }
-
-        self.logger.info(
-            f"Connected to stdio server '{server_name}' with tools: {[tool.name for tool in tools]}"
-        )
-        self.logger.info(f"Generated keywords for '{server_name}': {keywords}")
-
-    async def connect_to_http_server(self, server_name: str, url: str):
+    async def _connect_to_http_server(self, url: str):
         """Connect to an MCP server using HTTP transport
 
         Args:
-            server_name: Name to identify this server connection
             url: URL of the HTTP server
         """
         raise NotImplementedError("HTTP transport is not implemented yet")
 
-    def _generate_keywords_from_tools(
-        self, server_name: str, tools: List[Any]
-    ) -> List[str]:
-        """Generate keywords from server name and tools
+    async def list_tools(self) -> List[Tool]:
+        """List available tools from the server."""
+        if not self.session:
+            raise RuntimeError(f"Server {self.name} not initialized")
 
-        This method extracts keywords from:
-        1. The server name itself
-        2. Tool names (split by underscore and camelCase)
-        3. Common words from tool descriptions
+        tools_response = await self.session.list_tools()
+        tools = []
+        for item in tools_response.tools:
+            tools.append(
+                Tool(item.name, item.description, item.inputSchema, item.annotations)
+            )
+        return tools
 
-        Args:
-            server_name: Name of the server
-            tools: List of tools provided by the server
+    async def call_tool(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        retries: int = 2,
+        delay: float = 1.0,
+    ):
+        """Call a tool on the server."""
+        if not self.session:
+            raise RuntimeError(f"Server {self.name} not initialized")
 
-        Returns:
-            List of generated keywords
-        """
-        keywords = []
+        attempt = 0
+        while attempt < retries:
+            try:
+                self.logger.info(f"Executing {tool_name}...")
+                result = await self.session.call_tool(tool_name, arguments)
+                return result
+            except Exception as e:
+                attempt += 1
+                self.logger.warning(
+                    f"Error executing tool: {e}. Attempt {attempt} of {retries}."
+                )
+                if attempt < retries:
+                    self.logger.info(f"Retrying in {delay} seconds...")
+                    await asyncio.sleep(delay)
+                else:
+                    self.logger.error("Max retries reached. Failing.")
+                    raise
 
-        # Add server name as a keyword
-        keywords.append(server_name.lower())
 
-        # Process each tool
-        for tool in tools:
-            # Add tool name (split by underscore and extract words)
-            tool_name = tool.name.lower()
+class ServerConnectionManager:
+    """Manages connections to MCP servers with different transport methods"""
 
-            # Add the whole tool name
-            keywords.append(tool_name)
+    def __init__(
+        self,
+        logger: Optional[logging.Logger] = None,
+        config_path="config.json",
+    ):
+        self.servers: List[Server] = []
+        self.logger = logger or logging.getLogger(__name__)
+        self.config_path = config_path
+        self.server_config: Dict[str, Any] = {}
+        self._server_exit_stack: AsyncExitStack = AsyncExitStack()
 
-            # Split by underscore and add parts
-            name_parts = tool_name.split("_")
-            keywords.extend(name_parts)
+    async def __aenter__(self):
+        """Initialize by connecting to all servers in the config and command line args"""
+        try:
+            with open(self.config_path, "r") as f:
+                config = json.load(f)
+            self.server_config = config
+        except Exception as e:
+            self.logger.error(f"Error loading server configuration: {str(e)}")
+            raise
 
-            # Split camelCase words
-            for part in name_parts:
-                # Find camelCase boundaries and split
-                camel_case_parts = re.findall(r"[a-z]+|[A-Z][a-z]*", part)
-                keywords.extend([p.lower() for p in camel_case_parts if p])
+        for server_name, server_config in self.server_config.items():
+            server = await self._server_exit_stack.enter_async_context(
+                Server(server_name, server_config, logger=self.logger)
+            )
+            self.servers.append(server)
 
-            # Extract keywords from description if available
-            if hasattr(tool, "description") and tool.description:
-                # Simple keyword extraction - split description and take words longer than 3 chars
-                desc_words = tool.description.lower().split()
-                # Filter out common stop words and short words
-                stop_words = {"the", "and", "for", "with", "this", "that", "from", "to"}
-                desc_keywords = [
-                    word
-                    for word in desc_words
-                    if len(word) > 3 and word not in stop_words
-                ]
-                keywords.extend(desc_keywords)
+        self.logger.info(f"Connected to {len(self.servers)} servers")
+        return self
 
-        # Remove duplicates while preserving order
-        unique_keywords = list(dict.fromkeys(keywords))
-
-        return unique_keywords
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Clean up all server connections."""
+        self.logger.info("🧹 Cleaning up server connections...")
+        await self._server_exit_stack.aclose()
+        self.logger.info("✨ Server connections cleaned up.")
 
     def list_connected_servers(self) -> Dict[str, list]:
         """List all connected servers and their available tools
@@ -267,44 +274,14 @@ class ServerConnectionManager:
             Dictionary with server names as keys and list of tool names as values
         """
         result = {}
-        for server_name, server_data in self.servers.items():
-            result[server_name] = [tool.name for tool in server_data["tools"]]
+        for server in self.servers:
+            result[server.name] = []
         return result
 
-    def get_server_session(self, server_name: str) -> Optional[ClientSession]:
-        """Get the session for a specific server
-
-        Args:
-            server_name: Name of the server
-
-        Returns:
-            The server session or None if not found
-        """
-        if server_name in self.servers:
-            return self.servers[server_name]["session"]
-        return None
-
-    def get_server_tools(self, server_name: str) -> List[Any]:
-        """Get the tools for a specific server
-
-        Args:
-            server_name: Name of the server
-
-        Returns:
-            List of tools or empty list if not found
-        """
-        if server_name in self.servers:
-            return self.servers[server_name]["tools"]
-        return []
-
-    def get_server_names(self) -> List[str]:
-        """Get the names of all connected servers
+    def get_servers(self) -> List[Server]:
+        """Get the servers
 
         Returns:
             List of server names
         """
-        return list(self.servers.keys())
-
-    async def cleanup(self):
-        """Clean up resources"""
-        await self.exit_stack.aclose()
+        return self.servers

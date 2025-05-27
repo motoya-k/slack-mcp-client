@@ -1,13 +1,14 @@
 # Slack MCP Client
 
-A Python client for connecting to and interacting with Model Context Protocol (MCP) servers.
+A Python client for connecting Slack to Model Context Protocol (MCP) servers, enabling AI-powered interactions with various tools and services.
 
 ## Features
 
 - Connect to multiple MCP servers simultaneously
 - Support for different transport methods (stdio, HTTP)
 - Manage server connections with JSON configuration
-- Support for multiple AI providers (Anthropic, OpenAI, Gemini)
+- Support for multiple AI providers (Anthropic, OpenAI, Groq, Gemini)
+- Slack bot integration with Socket Mode
 - Interactive chat interface with AI
 - Support for both Python and JavaScript MCP servers
 - Clean architecture with dependency injection
@@ -15,12 +16,35 @@ A Python client for connecting to and interacting with Model Context Protocol (M
 ## Installation
 
 ```bash
+uv venv
 uv sync
 ```
 
-## Usage
+## Configuration
 
-### Using JSON Configuration (Recommended)
+### Environment Variables
+
+Create a `.env` file based on the provided `.env.example`:
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit the file with your credentials
+vi .env
+```
+
+Required environment variables:
+
+- `SLACK_BOT_TOKEN`: Your Slack bot token (xoxb-...)
+- `SLACK_APP_TOKEN`: Your Slack app-level token (xapp-...)
+- At least one LLM API key (based on your chosen model):
+  - `ANTHROPIC_API_KEY`: For Claude models
+  - `OPENAI_API_KEY`: For GPT models
+  - `GROQ_API_KEY`: For Llama models
+  - `GEMINI_API_KEY`: For Gemini models
+
+### Server Configuration
 
 Create a `config.json` file with transport-specific configurations:
 
@@ -45,55 +69,98 @@ Create a `config.json` file with transport-specific configurations:
 }
 ```
 
-Then simply run the client:
+## Usage
+
+Run the Slack MCP Bot:
 
 ```bash
-# Using the installed command
-slack-mcp-client
-
-# Or using the main.py script with different AI providers
-uv run main.py
+# Using the main.py script
+python main.py
 ```
 
-The client will automatically load the `config.json` file and connect to all configured servers.
+The bot will connect to Slack using Socket Mode and initialize all configured MCP servers.
 
-### Interactive Chat Commands
+## Testing with ngrok
 
-- Type `servers` to list all connected servers and their tools
-- To use a specific server, prefix your query with the server name: `weather: What's the forecast for New York?`
-- Type `quit` to exit the client
+To test your Slack bot with a public URL (required for some Slack features), you can use ngrok:
 
-## Transport Methods
+### 1. Install ngrok
 
-### stdio Transport
+```bash
+# macOS with Homebrew
+brew install ngrok
 
-The stdio transport method runs a local command (like `python script.py` or `node script.js`) and communicates with the MCP server through standard input/output.
+# Or download from https://ngrok.com/download
+```
 
-Configuration parameters:
-- `transport`: Set to "stdio"
-- `command`: The command to run (e.g., "python", "node")
-- `args`: List of command arguments (e.g., ["script.py"])
-- `env`: Optional environment variables
+### 2. Set up ngrok authentication
 
-### HTTP Transport
+```bash
+ngrok config add-authtoken YOUR_NGROK_AUTH_TOKEN
+```
 
-The HTTP transport method connects to an MCP server running as an HTTP service.
+### 3. Create a Slack App
 
-Configuration parameters:
-- `transport`: Set to "http"
-- `url`: The URL of the HTTP MCP server
+1. Go to [https://api.slack.com/apps](https://api.slack.com/apps)
+2. Click "Create New App" > "From scratch"
+3. Name your app and select your workspace
+4. Under "Basic Information", note your "App Credentials"
+5. Under "Socket Mode", enable Socket Mode and create an app-level token with `connections:write` scope
+   - Save this token as `SLACK_APP_TOKEN` in your `.env` file
+6. Under "OAuth & Permissions":
+   - Add the following Bot Token Scopes:
+     - `app_mentions:read`
+     - `channels:history`
+     - `chat:write`
+     - `im:history`
+     - `im:read`
+     - `im:write`
+   - Install the app to your workspace
+   - Save the Bot User OAuth Token as `SLACK_BOT_TOKEN` in your `.env` file
+7. Under "Event Subscriptions":
+   - Enable events
+   - Subscribe to bot events:
+     - `app_mention`
+     - `message.im`
+8. Under "App Home", enable the Home Tab
+
+### 4. Start your Slack MCP Bot
+
+```bash
+python main.py
+```
+
+### 5. (Optional) Use ngrok for HTTP-based MCP servers
+
+If you have HTTP-based MCP servers running locally, you can expose them with ngrok:
+
+```bash
+# Expose a local server running on port 8000
+ngrok http 8000
+```
+
+Then update your `config.json` to use the ngrok URL:
+
+```json
+{
+  "example_http": {
+    "transport": "http",
+    "url": "https://your-ngrok-url.ngrok.io"
+  }
+}
+```
 
 ## Development
 
 ### Architecture
 
-The client uses a dependency injection pattern to separate concerns:
+The client uses a modular architecture:
 
-- `ServerConnectionManager`: Handles all server connections and transport methods
-- `AgentManager`: Abstracts different AI providers (Anthropic, OpenAI, Gemini)
-- `MCPClient`: Manages the chat interface and query processing
-
-This separation makes the code more maintainable, testable, and flexible.
+- `slack_bot/config.py`: Manages configuration and environment variables
+- `slack_bot/llm_client.py`: Handles communication with different LLM providers
+- `slack_bot/server.py`: Manages MCP server connections and tool execution
+- `slack_bot/bot.py`: Integrates with Slack API and handles message processing
+- `main.py`: Entry point that ties everything together
 
 ### Project Structure
 
@@ -101,74 +168,20 @@ This separation makes the code more maintainable, testable, and flexible.
 slack-mcp-client/
 ├── config.json           # Server configuration
 ├── main.py               # Entry point script
-├── setup.py              # Setup script
+├── .env                  # Environment variables (create from .env.example)
+├── .env.example          # Example environment variables
 ├── pyproject.toml        # Project metadata
 ├── README.md             # Project documentation
 ├── src/
-│   └── mcp_client/ # Main package
+│   ├── mcp_client/       # Original MCP client package
+│   └── slack_bot/        # Slack bot implementation
 │       ├── __init__.py   # Package initialization
-│       ├── client.py     # MCPClient implementation
-│       ├── server_manager.py # ServerConnectionManager implementation
-│       ├── agent_manager.py # AgentManager implementation
-│       └── cli.py        # Command-line interface
-```
-
-### Using the API
-
-```python
-import asyncio
-from mcp_client import MCPClient, ServerConnectionManager
-
-async def main():
-    # Create server manager and client
-    server_manager = ServerConnectionManager()
-    
-    # Use Anthropic (default)
-    client = MCPClient(server_manager, "config.json")
-    
-    # Or use OpenAI
-    # client = MCPClient(server_manager, "config.json", provider="openai")
-    
-    # Or use Gemini with a specific model
-    # client = MCPClient(server_manager, "config.json", provider="gemini", model="gemini-1.5-pro")
-    
-    # Initialize and connect to servers
-    await client.initialize()
-    
-    # Process queries
-    response = await client.process_query("What's the weather like?", "weather")
-    print(response)
-    
-    # Clean up
-    await client.cleanup()
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-### Using Different AI Providers
-
-The client supports multiple AI providers through the `AgentManager` class:
-
-```python
-from mcp_client import AgentManager, AnthropicAgentManager, OpenAIAgentManager, GeminiAgentManager
-
-# Create an agent manager for a specific provider
-agent = AgentManager.create("anthropic")  # or "openai" or "gemini"
-
-# Or create provider-specific instances directly
-anthropic_agent = AnthropicAgentManager(model="claude-3-5-sonnet-20241022")
-openai_agent = OpenAIAgentManager(model="gpt-4o")
-gemini_agent = GeminiAgentManager(model="gemini-1.5-pro")
-
-# Then use it with MCPClient
-client = MCPClient(server_manager, agent_manager=agent)
+│       ├── config.py     # Configuration management
+│       ├── llm_client.py # LLM client implementation
+│       ├── server.py     # Server management
+│       └── bot.py        # Slack bot implementation
 ```
 
 ## License
 
 MIT
-
-## References
-
-- [Model Context Protocol (MCP) Python SDK](https://github.com/modelcontextprotocol/python-sdk)

@@ -1,435 +1,222 @@
-"""Agent manager for MCP clients.
-
-This module provides the AgentManager class which abstracts different AI providers
-(Anthropic, OpenAI, Gemini) for use with MCP tools.
-"""
-
-import abc
+import asyncio
 import logging
 import os
-from typing import Dict, List, Optional, Any, Union
-
-from anthropic import Anthropic
-from mcp import ClientSession
-import openai
+import json  # Added json import
+from typing import Dict, List, Optional, Any, Tuple, Union
+from anthropic import Anthropic, types as claude_types  # type: ignore
 from google import genai
 from google.genai import types as genai_types
 
-
-class AgentManager(abc.ABC):
-    """Base class for AI agent managers."""
-
-    def __init__(self, logger: Optional[logging.Logger] = None):
-        """Initialize the agent manager.
-
-        Args:
-            logger: Optional logger
-        """
-        self.logger = logger or logging.getLogger(__name__)
-
-    @abc.abstractmethod
-    async def process_query_without_tools(self, query: str) -> str:
-        """Process a query directly without using MCP tools.
-
-        Args:
-            query: The user query to process
-
-        Returns:
-            The processed response
-        """
-        pass
-
-    @abc.abstractmethod
-    async def process_query_with_server(
-        self,
-        query: str,
-        session: Any,
-        server_name: str,
-    ) -> str:
-        """Process a query using a specific MCP server.
-
-        This method handles the complete conversation flow including executing tool calls
-        and processing the results until no more tool calls are needed.
-
-        Args:
-            query: The user query to process
-            session: The server session to use for tool calls
-            server_name: The name of the server being used
-
-        Returns:
-            The final processed response as a string
-        """
-        pass
-
-    @staticmethod
-    def create(provider: str, **kwargs) -> "AgentManager":
-        """Factory method to create an agent manager for a specific provider.
-
-        Args:
-            provider: The provider name ('anthropic', 'openai', or 'gemini')
-            **kwargs: Additional arguments to pass to the provider's constructor
-
-        Returns:
-            An instance of the appropriate AgentManager subclass
-
-        Raises:
-            ValueError: If the provider is not supported or the required package is not installed
-        """
-        provider = provider.lower()
-
-        if provider == "anthropic":
-            return AnthropicAgentManager(**kwargs)
-        elif provider == "openai":
-            return OpenAIAgentManager(**kwargs)
-        elif provider == "gemini":
-            return GeminiAgentManager(**kwargs)
-        else:
-            raise ValueError(f"Unsupported provider: {provider}")
+from mcp_client.server_manager import Server
+from mcp_client.agent_manager_interface import (
+    AgentManger,
+    Message,
+    ToolSchema,
+    ToolCall,
+)
 
 
-class AnthropicAgentManager(AgentManager):
-    """Agent manager for Anthropic Claude."""
+class ClaudeAgent(AgentManger):
+    """Anthropic Claude adapter."""
 
     def __init__(
         self,
-        model: str = "claude-3-5-sonnet-20241022",
-        max_tokens: int = 1000,
-        api_key: Optional[str] = None,
+        model: str = "claude-3-5-haiku-20241022",
+        max_tokens: int = 1024,
         logger: Optional[logging.Logger] = None,
     ):
-        """Initialize the Anthropic agent manager.
-
-        Args:
-            model: The Claude model to use
-            max_tokens: Maximum tokens to generate
-            api_key: Optional API key (if not provided, uses environment variable)
-            logger: Optional logger
-        """
         super().__init__(logger)
+        if Anthropic is None:
+            raise RuntimeError("anthropic package not installed")
+        self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         self.model = model
         self.max_tokens = max_tokens
-        # Use ANTHROPIC_API_KEY from environment if api_key is not provided
-        if api_key is None:
-            api_key = os.environ.get("ANTHROPIC_API_KEY")
-        self.anthropic = Anthropic(api_key=api_key) if api_key else Anthropic()
-        self.logger.info(f"Initialized Anthropic agent manager with model: {model}")
 
-    async def process_query_without_tools(self, query: str = "") -> str:
-        """Process a query directly with Claude without using MCP tools.
+    async def _prepare_tools(self, servers: List[Server]) -> List[ToolSchema]:
+        tool_schemas: List[ToolSchema] = []
+        for srv in servers:
+            for t in await srv.list_tools():
+                tool_schemas.append(
+                    {
+                        "name": t.name,
+                        "description": t.description,
+                        "input_schema": t.input_schema,  # Claude expects JSON schema
+                    }
+                )
+        return tool_schemas
 
-        Args:
-            query: The user query to process
-
-        Returns:
-            The processed response
-        """
-        self.logger.info(
-            f"🔍 Processing query directly with Claude (no tools): {query}"
-        )
-        messages = [{"role": "user", "content": query}]
-
-        # Call Claude API without tools
-        response = self.anthropic.messages.create(
+    async def _generate_response(
+        self,
+        messages: List[Message],
+        tools: List[ToolSchema],
+    ) -> Tuple[claude_types.Message, bool, List[claude_types.ContentBlock]]:  # type: ignore
+        resp = await asyncio.to_thread(
+            self.client.messages.create,
             model=self.model,
             max_tokens=self.max_tokens,
             messages=messages,
+            tools=tools,
         )
+        parts: List[claude_types.ContentBlock] = resp.content  # type: ignore
+        has_call = any(p.type == "tool_use" for p in parts)
+        return resp, has_call, parts
 
-        # Extract text response
-        return response.content[0].text
+    def _extract_tool_calls(self, parts: List[Any]) -> List[ToolCall]:
+        calls: List[ToolCall] = []
+        for p in parts:
+            if getattr(p, "type", None) == "tool_use":
+                calls.append(
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "args": p.input,
+                    }
+                )
+        return calls
 
-    async def _process_query_with_tools(
+    def _integrate_tool_result(
         self,
-        messages: List[Dict[str, Any]],
-        available_tools: List[Dict[str, Any]],
-    ) -> tuple:
-        """Internal method to process a query using Claude with available MCP tools.
-
-        Args:
-            messages: The conversation history
-            available_tools: List of available tools
-
-        Returns:
-            Tuple of (response, has_tool_call, assistant_message_content)
-        """
-        # Call Claude API with tools
-        response = self.anthropic.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            messages=messages,
-            tools=available_tools,
-        )
-
-        has_tool_call = False
-        assistant_message_content = []
-
-        for content in response.content:
-            if content.type == "tool_use":
-                has_tool_call = True
-            assistant_message_content.append(content)
-
-        return response, has_tool_call, assistant_message_content
-
-    async def process_query_with_server(
-        self,
-        query: str,
-        session: ClientSession,
-        server_name: str,
-    ) -> str:
-        """Process a query using Claude with available MCP tools from a specific server.
-
-        This method handles the complete conversation flow including executing tool calls
-        and processing the results until no more tool calls are needed.
-
-        Args:
-            query: The user query to process
-            session: The server session to use for tool calls
-            server_name: The name of the server being used
-
-        Returns:
-            The final processed response as a string
-        """
-        # Get available tools from the server
-        response = await session.list_tools()
-        available_tools = [
+        messages: List[Message],
+        call: ToolCall,
+        result: Any,
+    ) -> None:
+        messages.append(
             {
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": tool.inputSchema,
+                "role": "user",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": call["id"],
+                        "content": (
+                            result.content if hasattr(result, "content") else result
+                        ),
+                    }
+                ],
             }
-            for tool in response.tools
-        ]
-
-        # Prepare initial messages
-        messages = [{"role": "user", "content": query}]
-
-        # Initial AI API call
-        response, has_tool_call, assistant_message_content = (
-            await self._process_query_with_tools(messages, available_tools)
         )
 
-        final_text = []
 
-        # Continue processing responses until no more tool calls are made
-        while True:
-            for content in assistant_message_content:
-                if content.type == "text":
-                    final_text.append(content.text)
-                elif content.type == "tool_use":
-                    tool_name = content.name
-                    tool_args = content.input
-                    tool_id = content.id
-
-                    # Execute tool call on the specified server
-                    result = await session.call_tool(tool_name, tool_args)
-                    final_text.append(
-                        f"[Calling tool {tool_name} with args {tool_args} on server '{server_name}']"
-                    )
-
-                    messages.append(
-                        {"role": "assistant", "content": assistant_message_content}
-                    )
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "tool_result",
-                                    "tool_use_id": tool_id,
-                                    "content": result.content,
-                                }
-                            ],
-                        }
-                    )
-
-                    # Get next response from AI
-                    response, has_tool_call, assistant_message_content = (
-                        await self._process_query_with_tools(messages, available_tools)
-                    )
-
-                    # Break the inner loop to process the new response
-                    break
-
-            # If no tool calls were made in this response, we're done
-            if not has_tool_call:
-                break
-
-        return "\n".join(final_text)
-
-
-class OpenAIAgentManager(AgentManager):
-    """Agent manager for OpenAI models."""
-
-    def __init__(
-        self,
-        model: str = "gpt-4o",
-        max_tokens: int = 1000,
-        api_key: Optional[str] = None,
-        logger: Optional[logging.Logger] = None,
-    ):
-        raise NotImplementedError("OpenAI is not supported yet")
-
-
-class GeminiAgentManager(AgentManager):
-    """Agent manager for Google Gemini models."""
+class GeminiAgent(AgentManger):
+    """Google Gemini adapter."""
 
     def __init__(
         self,
         model: str = "gemini-2.0-flash",
-        max_tokens: int = 1000,
-        api_key: Optional[str] = None,
+        max_tokens: int = 1024,
         logger: Optional[logging.Logger] = None,
     ):
-        """Initialize the Gemini agent manager.
-
-        Args:
-            model: The Gemini model to use
-            max_tokens: Maximum tokens to generate
-            api_key: Optional API key (if not provided, uses environment variable)
-            logger: Optional logger
-        """
         super().__init__(logger)
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         self.model = model
         self.max_tokens = max_tokens
 
-        # Use GEMINI_API_KEY from environment if api_key is not provided
-        if api_key is None:
-            api_key = os.environ.get("GEMINI_API_KEY")
-
-        self.gemini = genai.Client(api_key=api_key)
-        self.logger.info(f"Initialized Gemini agent manager with model: {model}")
-
-    async def process_query_without_tools(self, query: str) -> str:
-        """Process a query directly with Gemini without using MCP tools.
-
-        Args:
-            query: The user query to process
-
-        Returns:
-            The processed response
-        """
-        self.logger.info(
-            f"🔍 Processing query directly with Gemini (no tools): {query}"
-        )
-        response = self.gemini.models.generate_content(
-            model=self.model,
-            contents=query,
-        )
-        return response.text
-
-    async def _process_query_with_tools(
-        self,
-        messages: List[Dict[str, Any]],
-        available_tools: List[Dict[str, Any]],
-    ) -> tuple[genai_types.GenerationConfig, bool, List[genai_types.Part]]:
-        """Internal method to process a query using Gemini with available MCP tools.
-
-        Args:
-            query: The user query to process
-            messages: The conversation history
-            available_tools: List of available tools
-
-        Returns:
-            Tuple of (response, has_tool_call, assistant_message_content)
-        """
-        tool_defs = genai_types.Tool(function_declarations=available_tools)
-        response = self.gemini.models.generate_content(
-            model=self.model,
-            contents=messages,
-            config=genai_types.GenerateContentConfig(
-                tools=[tool_defs],
-            ),
-        )
-
-        has_tool_call = False
-        assistant_message_content = []
-
-        self.logger.info(f"🍇 Gemini response: {response}")
-
-        for candidate in response.candidates:
-            if candidate.content.parts[0].function_call:
-                has_tool_call = True
-            if len(candidate.content.parts) > 0:
-                assistant_message_content = candidate.content.parts
-
-        return response, has_tool_call, assistant_message_content
-
-    async def process_query_with_server(
-        self,
-        query: str,
-        session: ClientSession,
-        server_name: str,
-    ) -> str:
-        """Process a query using Gemini with available MCP tools from a specific server.
-
-        This method handles the complete conversation flow including executing tool calls
-        and processing the results until no more tool calls are needed.
-
-        Args:
-            query: The user query to process
-            session: The server session to use for tool calls
-            server_name: The name of the server being used
-
-        Returns:
-            The final processed response as a string
-        """
-        response = await session.list_tools()
-        available_tools = [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "parameters": tool.inputSchema,
-            }
-            for tool in response.tools
-        ]
-
-        # Prepare initial messages
-        messages = [query]
-
-        # Initial AI API call
-        response, has_tool_call, assistant_message_content = (
-            await self._process_query_with_tools(messages, available_tools)
-        )
-
-        final_text = []
-        while True:
-            for content in assistant_message_content:
-                self.logger.info(
-                    f"🍇 Gemini content: {content.function_call} {bool(content.function_call)}"
+    async def _prepare_tools(self, servers: List[Server]) -> List[ToolSchema]:
+        schemas: List[ToolSchema] = []
+        for srv in servers:
+            for t in await srv.list_tools():
+                schemas.append(
+                    {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.parameters,
+                    }
                 )
-                if content.function_call:
-                    tool_name = content.function_call.name
-                    tool_args = content.function_call.args
-                    tool_id = content.function_call.id
+        return schemas
 
-                    # Execute tool call on the specified server
-                    result = await session.call_tool(tool_name, tool_args)
-                    final_text.append(
-                        f"[Calling tool {tool_name} with args {tool_args} on server '{server_name}']"
-                    )
+    async def _generate_response(
+        self,
+        messages: List[Message],
+        tools: List[ToolSchema],
+    ) -> Tuple[genai_types.GenerateContentResponse, bool, List[genai_types.Part]]:
+        gemini_contents = []
+        for msg in messages:
+            role = msg["role"]
+            content_parts = []
+            if isinstance(msg["content"], str):
+                content_parts.append(genai_types.Part(text=msg["content"]))
+            elif isinstance(msg["content"], list):
+                for item in msg["content"]:
+                    if "function_response" in item:
+                        content_parts.append(
+                            genai_types.Part(
+                                function_response=item["function_response"]
+                            )
+                        )
+                    elif "function_call" in item:
+                        content_parts.append(
+                            genai_types.Part(function_call=item["function_call"])
+                        )
+                    elif "text" in item:
+                        content_parts.append(genai_types.Part(text=item["text"]))
+                    else:
+                        content_parts.append(genai_types.Part(text=str(item)))
+            else:
+                content_parts.append(genai_types.Part(text=str(msg["content"])))
 
-                    messages.append({"role": "assistant", "content": content.text})
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "tool_result",
-                                    "tool_use_id": tool_id,
-                                    "content": result.content,
-                                }
-                            ],
+            gemini_role = "model" if role == "assistant" else role
+            gemini_contents.append(
+                genai_types.Content(role=gemini_role, parts=content_parts)
+            )
+
+        tool_defs = genai_types.Tool(function_declarations=tools)
+        resp = await asyncio.to_thread(
+            self.client.models.generate_content,
+            model=self.model,
+            contents=gemini_contents,  # Use the converted messages
+            config=genai_types.GenerateContentConfig(tools=[tool_defs]),
+        )
+        parts = resp.candidates[0].content.parts
+        has_call = any(hasattr(p, "function_call") and p.function_call for p in parts)
+        return resp, has_call, parts
+
+    def _extract_tool_calls(self, parts: List[Any]) -> List[ToolCall]:
+        calls: List[ToolCall] = []
+        for p in parts:
+            if getattr(p, "function_call", None):
+                fc = p.function_call
+                calls.append(
+                    {
+                        "id": fc.id,
+                        "name": fc.name,
+                        "args": fc.args,
+                    }
+                )
+        return calls
+
+    def _integrate_tool_result(
+        self,
+        messages: List[Message],
+        call: ToolCall,
+        result: Any,
+    ) -> None:
+        response_content = result.content if hasattr(result, "content") else result
+        if isinstance(response_content, str):
+            try:
+                response_content = json.loads(response_content)
+            except json.JSONDecodeError:
+                response_content = {"text_response": response_content}
+        elif not isinstance(response_content, dict):
+            response_content = {"value": str(response_content)}
+
+        messages.append(
+            {
+                "role": "user",
+                "content": [
+                    genai_types.Part(
+                        function_response={
+                            "name": call["name"],
+                            "response": response_content,
                         }
                     )
+                ],
+            }
+        )
 
-                    # Get next response from AI
-                    response, has_tool_call, assistant_message_content = (
-                        await self._process_query_with_tools(messages, available_tools)
-                    )
 
-                    # Break the inner loop to process the new response
-                    break
-            # If no tool calls were made in this response, we're done
-            if not has_tool_call:
-                break
-        return "\n".join(final_text)
+def create_agent(provider: str, **kwargs) -> AgentManger:
+    provider = provider.lower()
+    if provider == "claude" or provider == "anthropic":
+        return ClaudeAgent(**kwargs)
+    if provider == "gemini":
+        return GeminiAgent(**kwargs)
+    raise ValueError(f"Unknown provider: {provider}")

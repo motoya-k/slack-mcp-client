@@ -11,65 +11,34 @@ from dotenv import load_dotenv
 from mcp_client.server_manager import ServerConnectionManager
 from mcp_client.client import MCPClient
 
-
-def setup_logging():
-    """Set up logging configuration."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    return logging.getLogger("mcp_client")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 async def main():
     """Main entry point for the Slack MCP Client."""
-    # Load environment variables
     load_dotenv()
 
-    # Setup logging
-    logger = setup_logging()
-
-    # Create server manager and client
-    server_manager = ServerConnectionManager(logger=logger)
-    # Anthropic
-    # client = MCPClient(
-    #     server_manager=server_manager,
-    #     config_path="config.json",
-    #     logger=logger,
-    #     provider="anthropic",
-    #     model="claude-3-5-sonnet-20240620",
-    # )
-    # Gemini
-    client = MCPClient(
-        server_manager=server_manager,
+    async with ServerConnectionManager(
+        logger=logging.getLogger("ServerConnectionManager"),
         config_path="config.json",
-        logger=logger,
-        provider="gemini",
-        model="gemini-2.0-flash",
-    )
-    # OpenAI
-    # client = MCPClient(
-    #     server_manager=server_manager,
-    #     config_path="config.json",
-    #     logger=logger,
-    #     provider="openai",
-    #     model="gpt-4o",
-    # )
-
-    try:
-        # Initialize client (connects to all servers in config and command line)
-        await client.initialize()
-
-        # Continue even if no servers connected
-        if not server_manager.get_server_names():
-            logger.warning(
-                f"No servers connected. Running in direct mode without MCP tools."
-            )
-
-        # Start chat loop
+    ) as server_manager:
+        # Anthropic
+        client = MCPClient(
+            server_manager=server_manager,
+            logger=logging.getLogger("MCPClient"),
+            provider="gemini",
+            model="gemini-2.5-pro-preview-05-06",
+        )
         await client.chat_loop()
-    finally:
-        await client.cleanup()
+
+        print("🐘 Application running...")
+
+    # The __aexit__ method of ServerConnectionManager will handle cleanup automatically
+    # when exiting the 'async with' block.
 
 
 def run():
