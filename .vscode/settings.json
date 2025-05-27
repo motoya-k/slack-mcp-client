@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "dotenv",
+        "sanic",
         "venv"
     ],
     "python.analysis.extraPaths": [
