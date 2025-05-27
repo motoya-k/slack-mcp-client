@@ -65,8 +65,8 @@ async def create_client() -> MCPClient:
     client = MCPClient(
         server_manager=server_manager,
         logger=logging.getLogger("MCPClient"),
-        provider="anthropic",
-        model="claude-3-7-sonnet-20250219",
+        provider="gemini",
+        model="gemini-2.0-flash",
         system_prompt_path="system.md",
     )
     return client
