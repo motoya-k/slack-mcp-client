@@ -139,13 +139,8 @@ class SlackBot:
                     # Handle app_mention events directly
                     if (
                         request.json
-                        and request.json.get("event", {}).get("type") == "message"
+                        and request.json.get("event", {}).get("type") == "app_mention"
                     ):
-                        message = request.json.get("event", {}).get("text")
-                        is_app_mentioned = "<@U07GYQWMNSK>" in message
-                        if not is_app_mentioned:
-                            return sanic_json({"ok": True})
-
                         logger.info("Received app_mention event via HTTP")
                         event = request.json.get("event", {})
                         user = event.get("user")
