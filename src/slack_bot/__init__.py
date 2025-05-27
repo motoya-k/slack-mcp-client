@@ -142,7 +142,7 @@ class SlackBot:
                         and request.json.get("event", {}).get("type") == "message"
                     ):
                         message = request.json.get("event", {}).get("text")
-                        is_app_mentioned = "<@U08TS15GH1R>" in message
+                        is_app_mentioned = "<@U07GYQWMNSK>" in message
                         if not is_app_mentioned:
                             return sanic_json({"ok": True})
 
