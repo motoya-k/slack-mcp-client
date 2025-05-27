@@ -20,6 +20,7 @@ class MCPClient:
         logger: Optional[logging.Logger] = None,
         provider: str = "anthropic",
         model: Optional[str] = None,
+        system_prompt_path: Optional[str] = None,
     ):
         """Initialize the MCP client
 
@@ -28,6 +29,7 @@ class MCPClient:
             logger: Optional logger
             provider: AI provider to use ('anthropic', 'openai', or 'gemini')
             model: Model name to use (if None, uses provider's default)
+            system_prompt_path: Path to a file containing the system prompt
         """
         self.logger = logger
         self.server_manager = server_manager
@@ -37,7 +39,9 @@ class MCPClient:
         if model:
             agent_kwargs["model"] = model
 
-        self.agent_manager = create_agent(provider, **agent_kwargs)
+        self.agent_manager = create_agent(
+            provider, system_prompt_path=system_prompt_path, **agent_kwargs
+        )
 
     async def chat_loop(self):
         """Run an interactive chat loop"""

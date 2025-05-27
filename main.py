@@ -26,12 +26,20 @@ async def main():
         logger=logging.getLogger("ServerConnectionManager"),
         config_path="config.json",
     ) as server_manager:
-        # Anthropic
+        # Create client with system prompt
+        # client = MCPClient(
+        #     server_manager=server_manager,
+        #     logger=logging.getLogger("MCPClient"),
+        #     provider="gemini",
+        #     model="gemini-2.5-pro-preview-05-06",
+        #     system_prompt_path="system.md",
+        # )
         client = MCPClient(
             server_manager=server_manager,
             logger=logging.getLogger("MCPClient"),
-            provider="gemini",
-            model="gemini-2.5-pro-preview-05-06",
+            provider="anthropic",
+            model="claude-3-5-haiku-20241022",
+            system_prompt_path="system.md",
         )
         await client.chat_loop()
 

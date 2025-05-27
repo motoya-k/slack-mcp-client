@@ -1,11 +1,12 @@
 import asyncio
 import logging
 import os
-import json  # Added json import
-from typing import Dict, List, Optional, Any, Tuple, Union
-from anthropic import Anthropic, types as claude_types  # type: ignore
+import json
+from typing import List, Optional, Any, Tuple
+from anthropic import Anthropic, types as claude_types
 from google import genai
 from google.genai import types as genai_types
+from pathlib import Path
 
 from mcp_client.server_manager import Server
 from mcp_client.agent_manager_interface import (
@@ -16,6 +17,25 @@ from mcp_client.agent_manager_interface import (
 )
 
 
+def load_system_prompt(file_path: Optional[str] = None) -> Optional[str]:
+    """Load system prompt from a file.
+
+    Args:
+        file_path: Path to the system prompt file
+
+    Returns:
+        The system prompt as a string, or None if file_path is None or file doesn't exist
+    """
+    if not file_path:
+        return None
+
+    path = Path(file_path)
+    if not path.exists():
+        return None
+
+    return path.read_text(encoding="utf-8")
+
+
 class ClaudeAgent(AgentManger):
     """Anthropic Claude adapter."""
 
@@ -24,13 +44,24 @@ class ClaudeAgent(AgentManger):
         model: str = "claude-3-5-haiku-20241022",
         max_tokens: int = 1024,
         logger: Optional[logging.Logger] = None,
+        system_prompt: Optional[str] = None,
     ):
-        super().__init__(logger)
+        super().__init__(logger, system_prompt)
         if Anthropic is None:
             raise RuntimeError("anthropic package not installed")
         self.client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
         self.model = model
         self.max_tokens = max_tokens
+
+    def _apply_system_prompt(self, messages: List[Message]) -> None:
+        """Apply the system prompt for Claude.
+
+        Claude doesn't use system prompts in the messages array.
+        Instead, it uses a top-level 'system' parameter in the API call.
+        This method is a no-op for Claude as the system prompt is handled in _generate_response.
+        """
+        # Claude handles system prompts differently - nothing to do here
+        pass
 
     async def _prepare_tools(self, servers: List[Server]) -> List[ToolSchema]:
         tool_schemas: List[ToolSchema] = []
@@ -49,15 +80,19 @@ class ClaudeAgent(AgentManger):
         self,
         messages: List[Message],
         tools: List[ToolSchema],
-    ) -> Tuple[claude_types.Message, bool, List[claude_types.ContentBlock]]:  # type: ignore
-        resp = await asyncio.to_thread(
-            self.client.messages.create,
-            model=self.model,
-            max_tokens=self.max_tokens,
-            messages=messages,
-            tools=tools,
-        )
-        parts: List[claude_types.ContentBlock] = resp.content  # type: ignore
+    ) -> Tuple[claude_types.Message, bool, List[claude_types.ContentBlock]]:
+        params = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            "messages": messages,
+            "tools": tools,
+        }
+
+        if self.system_prompt:
+            params["system"] = self.system_prompt
+
+        resp = await asyncio.to_thread(self.client.messages.create, **params)
+        parts: List[claude_types.ContentBlock] = resp.content
         has_call = any(p.type == "tool_use" for p in parts)
         return resp, has_call, parts
 
@@ -104,8 +139,9 @@ class GeminiAgent(AgentManger):
         model: str = "gemini-2.0-flash",
         max_tokens: int = 1024,
         logger: Optional[logging.Logger] = None,
+        system_prompt: Optional[str] = None,
     ):
-        super().__init__(logger)
+        super().__init__(logger, system_prompt)
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         self.model = model
         self.max_tokens = max_tokens
@@ -122,6 +158,21 @@ class GeminiAgent(AgentManger):
                     }
                 )
         return schemas
+
+    def _apply_system_prompt(self, messages: List[Message]) -> None:
+        """Apply the system prompt for Gemini.
+
+        Gemini handles system prompts as a 'user' role message at the beginning,
+        with a special prefix to indicate it's a system instruction.
+        """
+        if self.system_prompt:
+            # For Gemini, we add the system prompt as a user message with a special prefix
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"<system>\n{self.system_prompt}\n</system>",
+                }
+            )
 
     async def _generate_response(
         self,
@@ -213,7 +264,24 @@ class GeminiAgent(AgentManger):
         )
 
 
-def create_agent(provider: str, **kwargs) -> AgentManger:
+def create_agent(
+    provider: str, system_prompt_path: Optional[str] = None, **kwargs
+) -> AgentManger:
+    """Create an agent for the specified provider.
+
+    Args:
+        provider: The provider to use (claude, anthropic, gemini)
+        system_prompt_path: Path to a file containing the system prompt
+        **kwargs: Additional arguments to pass to the agent constructor
+
+    Returns:
+        An instance of AgentManger
+    """
+    # Load system prompt if a path is provided
+    system_prompt = load_system_prompt(system_prompt_path)
+    if system_prompt:
+        kwargs["system_prompt"] = system_prompt
+
     provider = provider.lower()
     if provider == "claude" or provider == "anthropic":
         return ClaudeAgent(**kwargs)

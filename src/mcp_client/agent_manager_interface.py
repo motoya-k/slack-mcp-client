@@ -12,8 +12,13 @@ ToolCall = Dict[str, Any]
 class AgentManger(abc.ABC):
     MAX_DEPTH: int = 5
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(
+        self,
+        logger: Optional[logging.Logger] = None,
+        system_prompt: Optional[str] = None,
+    ):
         self.logger = logger or logging.getLogger(self.__class__.__name__)
+        self.system_prompt = system_prompt
 
     @abc.abstractmethod
     async def _prepare_tools(self, servers: List[Server]) -> List[ToolSchema]:
@@ -44,10 +49,27 @@ class AgentManger(abc.ABC):
         """Append tool result to message context (in-place)."""
         pass
 
+    @abc.abstractmethod
+    def _apply_system_prompt(self, messages: List[Message]) -> None:
+        """Apply the system prompt to the messages list according to the provider's requirements.
+
+        Different providers may handle system prompts differently, so this method allows
+        each implementation to apply the system prompt in the appropriate way.
+
+        Args:
+            messages: The list of messages to modify (in-place)
+        """
+        pass
+
     async def process_query(self, query: str, servers: List[Server]) -> str:
         """Main entry point usable by application code."""
         tools = await self._prepare_tools(servers)
-        messages: List[Message] = [{"role": "user", "content": query}]
+        messages: List[Message] = []
+
+        # Apply system prompt according to the provider's requirements
+        self._apply_system_prompt(messages)
+
+        messages.append({"role": "user", "content": query})
         depth = 0
 
         while depth < self.MAX_DEPTH:
