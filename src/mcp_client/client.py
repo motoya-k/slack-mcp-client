@@ -66,7 +66,7 @@ async def create_client() -> MCPClient:
         server_manager=server_manager,
         logger=logging.getLogger("MCPClient"),
         provider="gemini",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash-preview-05-20",
         system_prompt_path="system.md",
     )
     return client
