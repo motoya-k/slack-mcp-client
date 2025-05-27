@@ -141,6 +141,9 @@ class SlackBot:
                         request.json
                         and request.json.get("event", {}).get("type") == "app_mention"
                     ):
+                        if request.headers.get("x-slack-retry-num"):
+                            return sanic_json({"ok": True})
+
                         logger.info("Received app_mention event via HTTP")
                         event = request.json.get("event", {})
                         user = event.get("user")
