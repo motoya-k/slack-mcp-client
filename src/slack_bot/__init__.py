@@ -9,6 +9,7 @@ from mcp_client.client import MCPClient
 from sanic import Sanic
 from sanic.response import json as sanic_json
 from .markdown_formatter import markdown_to_slack
+import uvicorn
 
 logging.basicConfig(
     level=logging.INFO,
@@ -219,7 +220,8 @@ class SlackBot:
                     port=port,
                     return_asyncio_server=True,
                 )
-                await server.server()
+                await server.startup()
+                await server.serve_forever()
             except Exception as e:
                 logger.error(f"Error creating SlackBot handler: {e}")
                 logger.error(traceback.format_exc())
