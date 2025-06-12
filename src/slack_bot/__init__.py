@@ -183,7 +183,9 @@ class SlackBot:
 
                             # Send response back to thread
                             await client.chat_postMessage(
-                                channel=channel, text=slack_formatted_response, thread_ts=thread_ts
+                                channel=channel,
+                                text=slack_formatted_response,
+                                thread_ts=thread_ts,
                             )
 
                             # Return a 200 OK to Slack
@@ -217,7 +219,7 @@ class SlackBot:
                     port=port,
                     return_asyncio_server=True,
                 )
-                await server.serve()
+                await server.server()
             except Exception as e:
                 logger.error(f"Error creating SlackBot handler: {e}")
                 logger.error(traceback.format_exc())
