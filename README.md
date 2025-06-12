@@ -75,7 +75,7 @@ Run the Slack MCP Bot:
 
 ```bash
 # Using the main.py script
-python main.py
+uv run main.py
 ```
 
 The bot will connect to Slack using Socket Mode and initialize all configured MCP servers.
@@ -127,7 +127,7 @@ ngrok config add-authtoken YOUR_NGROK_AUTH_TOKEN
 ### 4. Start your Slack MCP Bot
 
 ```bash
-python main.py
+uv run main.py
 ```
 
 ### 5. (Optional) Use ngrok for HTTP-based MCP servers

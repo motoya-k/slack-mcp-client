@@ -78,10 +78,11 @@ gcloud run deploy ${SERVICE_NAME} \
   --platform managed \
   --region ${REGION} \
   --allow-unauthenticated \
-  --memory 1Gi \
+  --memory 2Gi \
   --cpu 1 \
+  --timeout 600 \
   --min-instances 0 \
-  --max-instances 10 \
+  --max-instances 1 \
   $ENV_VARS_ARGS
 
 echo -e "${GREEN}Deployment complete!${NC}"

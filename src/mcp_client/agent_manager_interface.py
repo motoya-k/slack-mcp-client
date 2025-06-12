@@ -10,7 +10,7 @@ ToolCall = Dict[str, Any]
 
 
 class AgentManger(abc.ABC):
-    MAX_DEPTH: int = 5
+    MAX_DEPTH: int = 20
 
     def __init__(
         self,
@@ -50,7 +50,9 @@ class AgentManger(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def _apply_system_prompt(self, messages: List[Message]) -> None:
+    async def _apply_system_prompt(
+        self, servers: List[Server], messages: List[Message]
+    ) -> None:
         """Apply the system prompt to the messages list according to the provider's requirements.
 
         Different providers may handle system prompts differently, so this method allows
@@ -67,7 +69,7 @@ class AgentManger(abc.ABC):
         messages: List[Message] = []
 
         # Apply system prompt according to the provider's requirements
-        self._apply_system_prompt(messages)
+        await self._apply_system_prompt(servers, messages)
 
         messages.append({"role": "user", "content": query})
         depth = 0

@@ -7,8 +7,8 @@ from slack_bolt.adapter.sanic import AsyncSlackRequestHandler
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
 from mcp_client.client import MCPClient
 from sanic import Sanic
-import uvicorn
 from sanic.response import json as sanic_json
+from .markdown_formatter import markdown_to_slack
 
 logging.basicConfig(
     level=logging.INFO,
@@ -104,7 +104,9 @@ class SlackBot:
                 response = await self.client.chat_loop(
                     flattened_text + "\n\n" + json.dumps(metadata)
                 )
-                await say(text=response, thread_ts=thread_ts)
+                # Convert markdown to Slack format
+                slack_formatted_response = markdown_to_slack(response)
+                await say(text=slack_formatted_response, thread_ts=thread_ts)
             except Exception as e:
                 logger.error(f"Failed to generate response: {e}")
                 await say(
@@ -176,9 +178,12 @@ class SlackBot:
                                 flattened_text + "\n\n" + json.dumps(metadata)
                             )
 
+                            # Convert markdown to Slack format
+                            slack_formatted_response = markdown_to_slack(response)
+
                             # Send response back to thread
                             await client.chat_postMessage(
-                                channel=channel, text=response, thread_ts=thread_ts
+                                channel=channel, text=slack_formatted_response, thread_ts=thread_ts
                             )
 
                             # Return a 200 OK to Slack
@@ -207,8 +212,11 @@ class SlackBot:
                     return sanic_json({"ok": True})
 
                 port = int(os.environ.get("PORT", 8080))
-                config = uvicorn.Config(app, host="0.0.0.0", port=port)
-                server = uvicorn.Server(config)
+                server = await app.create_server(
+                    host="0.0.0.0",
+                    port=port,
+                    return_asyncio_server=True,
+                )
                 await server.serve()
             except Exception as e:
                 logger.error(f"Error creating SlackBot handler: {e}")

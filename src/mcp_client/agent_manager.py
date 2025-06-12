@@ -53,15 +53,19 @@ class ClaudeAgent(AgentManger):
         self.model = model
         self.max_tokens = max_tokens
 
-    def _apply_system_prompt(self, messages: List[Message]) -> None:
-        """Apply the system prompt for Claude.
-
-        Claude doesn't use system prompts in the messages array.
-        Instead, it uses a top-level 'system' parameter in the API call.
-        This method is a no-op for Claude as the system prompt is handled in _generate_response.
-        """
-        # Claude handles system prompts differently - nothing to do here
-        pass
+    async def _apply_system_prompt(
+        self, servers: List[Server], messages: List[Message]
+    ) -> None:
+        """Apply the system prompt for Claude."""
+        tools = [t.format_for_llm() for srv in servers for t in await srv.list_tools()]
+        tool_descriptions = "\n".join(tools)
+        if self.system_prompt:
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"<system>\n{self.system_prompt}\n# Available Tools:\n{tool_descriptions}</system>",
+                }
+            )
 
     async def _prepare_tools(self, servers: List[Server]) -> List[ToolSchema]:
         tool_schemas: List[ToolSchema] = []
@@ -88,8 +92,8 @@ class ClaudeAgent(AgentManger):
             "tools": tools,
         }
 
-        if self.system_prompt:
-            params["system"] = self.system_prompt
+        # if self.system_prompt:
+        #     params["system"] = self.system_prompt
 
         resp = await asyncio.to_thread(self.client.messages.create, **params)
         parts: List[claude_types.ContentBlock] = resp.content
@@ -159,18 +163,22 @@ class GeminiAgent(AgentManger):
                 )
         return schemas
 
-    def _apply_system_prompt(self, messages: List[Message]) -> None:
+    async def _apply_system_prompt(
+        self, servers: List[Server], messages: List[Message]
+    ) -> None:
         """Apply the system prompt for Gemini.
 
         Gemini handles system prompts as a 'user' role message at the beginning,
         with a special prefix to indicate it's a system instruction.
         """
+        tools = [t.format_for_llm() for srv in servers for t in await srv.list_tools()]
+        tool_descriptions = "\n".join(tools)
         if self.system_prompt:
             # For Gemini, we add the system prompt as a user message with a special prefix
             messages.append(
                 {
                     "role": "user",
-                    "content": f"<system>\n{self.system_prompt}\n</system>",
+                    "content": f"<system>\n{self.system_prompt}\n# Available Tools:\n{tool_descriptions}</system>",
                 }
             )
 
